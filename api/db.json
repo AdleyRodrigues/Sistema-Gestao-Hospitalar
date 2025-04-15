@@ -1,0 +1,46 @@
+{
+    "users": [
+        {
+            "id": "1",
+            "name": "João Silva",
+            "email": "joao@vidaplus.com",
+            "role": "patient",
+            "password": "123456"
+        },
+        {
+            "id": "2",
+            "name": "Dra. Maria Santos",
+            "email": "maria@vidaplus.com",
+            "role": "professional",
+            "password": "123456"
+        },
+        {
+            "id": "3",
+            "name": "Admin",
+            "email": "admin@vidaplus.com",
+            "role": "admin",
+            "password": "123456"
+        }
+    ],
+    "appointments": [
+        {
+            "id": "1",
+            "patientId": "1",
+            "professionalId": "2",
+            "date": "2024-04-10T10:00:00Z",
+            "status": "scheduled",
+            "type": "consultation"
+        }
+    ],
+    "medical_records": [
+        {
+            "id": "1",
+            "patientId": "1",
+            "professionalId": "2",
+            "date": "2024-03-15T14:00:00Z",
+            "diagnosis": "Consulta de rotina",
+            "prescription": "Manter hábitos saudáveis",
+            "notes": "Paciente em bom estado geral"
+        }
+    ]
+}
