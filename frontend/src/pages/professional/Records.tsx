@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -28,7 +28,19 @@ import {
     ListItemIcon,
     Card,
     CardContent,
-    CardHeader
+    CardHeader,
+    FormControl,
+    InputLabel,
+    Select,
+    OutlinedInput,
+    Snackbar,
+    Alert,
+    CircularProgress,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemAvatar,
+    ListItemSecondaryAction
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -43,9 +55,15 @@ import {
     Assignment as AssignmentIcon,
     AccessTime as AccessTimeIcon,
     Event as EventIcon,
-    MoreVert as MoreVertIcon
+    MoreVert as MoreVertIcon,
+    Delete as DeleteIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { useAuth } from '../../hooks/useAuth';
+import { api } from '../../services/api';
+import { MedicalRecordEntry, Patient, Prescription } from '../../types/medicalRecord';
 
 interface MedicalRecord {
     id: number;
@@ -122,386 +140,925 @@ const mockRecords: MedicalRecord[] = [
     }
 ];
 
-export default function ProfessionalRecords() {
-    const navigate = useNavigate();
-    const [searchTerm, setSearchTerm] = useState('');
+const ProfessionalRecords = () => {
+    const { user } = useAuth();
     const [tabValue, setTabValue] = useState(0);
-    const [recordDialogOpen, setRecordDialogOpen] = useState(false);
-    const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-    // Filtrar prontuários baseado na aba selecionada
-    const filteredRecords = mockRecords.filter((record) => {
-        if (tabValue === 0) return true; // Todos prontuários
-        if (tabValue === 1) return record.status === 'Concluído';
-        if (tabValue === 2) return record.status === 'Em andamento';
-        if (tabValue === 3) return record.status === 'Agendado';
-        return true;
-    }).filter((record) => {
-        // Filtro de pesquisa
-        if (!searchTerm) return true;
-        const term = searchTerm.toLowerCase();
-        return (
-            record.patientName.toLowerCase().includes(term) ||
-            record.diagnosis.toLowerCase().includes(term) ||
-            record.type.toLowerCase().includes(term)
-        );
+    const [searchQuery, setSearchQuery] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [patients, setPatients] = useState<Patient[]>([]);
+    const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
+    const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+    const [records, setRecords] = useState<MedicalRecordEntry[]>([]);
+    const [selectedRecord, setSelectedRecord] = useState<MedicalRecordEntry | null>(null);
+    const [openRecordDialog, setOpenRecordDialog] = useState(false);
+    const [openPrescriptionDialog, setOpenPrescriptionDialog] = useState(false);
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success' as 'success' | 'error' | 'info' | 'warning'
+    });
+    const [newRecord, setNewRecord] = useState<Partial<MedicalRecordEntry>>({
+        type: 'consultation',
+        title: '',
+        description: '',
+        diagnosis: '',
+        symptoms: '',
+        treatment: '',
+        notes: ''
     });
 
-    const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    // Estado para a prescrição
+    const [newPrescription, setNewPrescription] = useState<Partial<Prescription>>({
+        medications: [],
+        instructions: '',
+        status: 'active'
+    });
+
+    // Estado para um medicamento temporário
+    const [tempMedication, setTempMedication] = useState({
+        name: '',
+        dosage: '',
+        frequency: '',
+        duration: '',
+        instructions: ''
+    });
+
+    useEffect(() => {
+        fetchPatients();
+    }, []);
+
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            setFilteredPatients(patients);
+        } else {
+            const filtered = patients.filter(patient =>
+                patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                patient.email.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setFilteredPatients(filtered);
+        }
+    }, [searchQuery, patients]);
+
+    useEffect(() => {
+        if (selectedPatient) {
+            fetchPatientRecords(selectedPatient.id);
+        }
+    }, [selectedPatient]);
+
+    const fetchPatients = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get('/patients');
+            setPatients(response.data);
+            setFilteredPatients(response.data);
+        } catch (error) {
+            console.error('Erro ao buscar pacientes:', error);
+            showSnackbar('Erro ao carregar lista de pacientes', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchPatientRecords = async (patientId: string) => {
+        setLoading(true);
+        try {
+            const response = await api.get(`/medical_records?patientId=${patientId}`);
+            setRecords(response.data);
+        } catch (error) {
+            console.error('Erro ao buscar prontuário:', error);
+            showSnackbar('Erro ao carregar prontuário do paciente', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
     };
 
     const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(event.target.value);
+        setSearchQuery(event.target.value);
     };
 
-    const handleRecordView = (record: MedicalRecord) => {
-        setSelectedRecord(record);
-        setRecordDialogOpen(true);
+    const handleSelectPatient = (patient: Patient) => {
+        setSelectedPatient(patient);
+        setTabValue(1); // Muda para a aba de prontuário
     };
 
-    const handleRecordEdit = (recordId: number) => {
-        navigate(`/professional/records/edit/${recordId}`);
+    const handleOpenRecordDialog = (record: MedicalRecordEntry | null = null) => {
+        if (record) {
+            setSelectedRecord(record);
+            setNewRecord({
+                type: record.type,
+                title: record.title,
+                description: record.description,
+                diagnosis: record.diagnosis || '',
+                symptoms: record.symptoms || '',
+                treatment: record.treatment || '',
+                notes: record.notes || ''
+            });
+        } else {
+            setSelectedRecord(null);
+            setNewRecord({
+                type: 'consultation',
+                title: '',
+                description: '',
+                diagnosis: '',
+                symptoms: '',
+                treatment: '',
+                notes: ''
+            });
+        }
+        setOpenRecordDialog(true);
     };
 
-    const handleRecordClose = () => {
-        setRecordDialogOpen(false);
-        setSelectedRecord(null);
+    const handleCloseRecordDialog = () => {
+        setOpenRecordDialog(false);
     };
 
-    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, record: MedicalRecord) => {
-        setAnchorEl(event.currentTarget);
-        setSelectedRecord(record);
+    const handleOpenPrescriptionDialog = () => {
+        setNewPrescription({
+            medications: [],
+            instructions: '',
+            status: 'active'
+        });
+        setOpenPrescriptionDialog(true);
     };
 
-    const handleMenuClose = () => {
-        setAnchorEl(null);
+    const handleClosePrescriptionDialog = () => {
+        setOpenPrescriptionDialog(false);
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'Concluído':
-                return 'success';
-            case 'Em andamento':
-                return 'warning';
-            case 'Agendado':
-                return 'info';
-            default:
-                return 'default';
+    const handleRecordInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }>
+    ) => {
+        const { name, value } = e.target as { name: string; value: string };
+        setNewRecord(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSaveRecord = async () => {
+        if (!selectedPatient || !user) return;
+
+        setLoading(true);
+
+        try {
+            const recordData = {
+                ...newRecord,
+                patientId: selectedPatient.id,
+                professionalId: user.id,
+                date: new Date().toISOString()
+            };
+
+            let response;
+
+            if (selectedRecord) {
+                // Atualizar prontuário existente
+                response = await api.put(`/medical_records/${selectedRecord.id}`, {
+                    ...selectedRecord,
+                    ...recordData
+                });
+                showSnackbar('Prontuário atualizado com sucesso!', 'success');
+            } else {
+                // Criar novo prontuário
+                response = await api.post('/medical_records', recordData);
+                showSnackbar('Novo registro adicionado ao prontuário!', 'success');
+            }
+
+            // Atualiza a lista de prontuários
+            fetchPatientRecords(selectedPatient.id);
+            handleCloseRecordDialog();
+        } catch (error) {
+            console.error('Erro ao salvar prontuário:', error);
+            showSnackbar('Erro ao salvar informações do prontuário', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const getTypeIcon = (type: string) => {
-        switch (type) {
-            case 'Consulta':
-                return <MedicalServicesIcon />;
-            case 'Exame':
-                return <BiotechIcon />;
-            case 'Cirurgia':
-                return <LocalHospitalIcon />;
-            case 'Retorno':
-                return <AssignmentIcon />;
-            default:
-                return <AssignmentIcon />;
+    const handleMedicationInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+        const { name, value } = e.target;
+        setTempMedication(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleAddMedication = () => {
+        if (!tempMedication.name || !tempMedication.dosage) return;
+
+        setNewPrescription(prev => ({
+            ...prev,
+            medications: [
+                ...(prev.medications || []),
+                {
+                    id: Date.now().toString(), // ID temporário
+                    ...tempMedication
+                }
+            ]
+        }));
+
+        // Limpa o formulário de medicamento
+        setTempMedication({
+            name: '',
+            dosage: '',
+            frequency: '',
+            duration: '',
+            instructions: ''
+        });
+    };
+
+    const handleRemoveMedication = (index: number) => {
+        const updatedMedications = [...(newPrescription.medications || [])];
+        updatedMedications.splice(index, 1);
+        setNewPrescription(prev => ({ ...prev, medications: updatedMedications }));
+    };
+
+    const handlePrescriptionInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+        const { name, value } = e.target;
+        setNewPrescription(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSavePrescription = async () => {
+        if (!selectedPatient || !user || !selectedRecord) return;
+
+        setLoading(true);
+
+        try {
+            const prescriptionData = {
+                ...newPrescription,
+                medicalRecordId: selectedRecord.id,
+                patientId: selectedPatient.id,
+                professionalId: user.id,
+                date: new Date().toISOString(),
+                expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 dias
+            };
+
+            // Salvar prescrição
+            const response = await api.post('/prescriptions', prescriptionData);
+
+            // Atualizar o prontuário para incluir a referência à prescrição
+            const updatedRecord = {
+                ...selectedRecord,
+                prescriptions: [
+                    ...(selectedRecord.prescriptions || []),
+                    response.data
+                ]
+            };
+
+            await api.put(`/medical_records/${selectedRecord.id}`, updatedRecord);
+
+            // Atualiza o prontuário atual
+            fetchPatientRecords(selectedPatient.id);
+            handleClosePrescriptionDialog();
+            showSnackbar('Prescrição médica emitida com sucesso!', 'success');
+        } catch (error) {
+            console.error('Erro ao salvar prescrição:', error);
+            showSnackbar('Erro ao emitir prescrição médica', 'error');
+        } finally {
+            setLoading(false);
         }
+    };
+
+    const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
+        setSnackbar({
+            open: true,
+            message,
+            severity
+        });
+    };
+
+    const handleCloseSnackbar = () => {
+        setSnackbar(prev => ({ ...prev, open: false }));
+    };
+
+    const formatDate = (dateString: string) => {
+        return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR });
     };
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" component="h1" gutterBottom>
-                    Prontuários
-                </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => navigate('/professional/records/new')}
-                >
-                    Novo Prontuário
-                </Button>
-            </Box>
+            <Typography variant="h4" gutterBottom>
+                Gerenciamento de Prontuários
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                Acesse e gerencie os prontuários eletrônicos dos pacientes.
+            </Typography>
 
-            <Paper sx={{ mb: 3, p: 2 }}>
-                <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={6}>
-                        <TextField
-                            fullWidth
-                            placeholder="Buscar por paciente, diagnóstico ou tipo de atendimento..."
-                            variant="outlined"
-                            size="small"
-                            value={searchTerm}
-                            onChange={handleSearchChange}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon />
-                                    </InputAdornment>
-                                ),
-                            }}
-                        />
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <Button startIcon={<FilterListIcon />} sx={{ mr: 1 }}>
-                                Filtros Avançados
-                            </Button>
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Paper>
-
-            <Paper sx={{ mb: 3 }}>
+            <Paper elevation={2} sx={{ mb: 4 }}>
                 <Tabs
                     value={tabValue}
                     onChange={handleTabChange}
-                    variant="scrollable"
-                    scrollButtons="auto"
+                    variant="fullWidth"
+                    indicatorColor="primary"
+                    textColor="primary"
+                    sx={{ borderBottom: 1, borderColor: 'divider' }}
                 >
-                    <Tab label="Todos" />
-                    <Tab label="Concluídos" />
-                    <Tab label="Em andamento" />
-                    <Tab label="Agendados" />
+                    <Tab label="Buscar Paciente" />
+                    {selectedPatient && <Tab label={`Prontuário: ${selectedPatient.name}`} />}
                 </Tabs>
-            </Paper>
 
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Paciente</TableCell>
-                            <TableCell>Data</TableCell>
-                            <TableCell>Tipo</TableCell>
-                            <TableCell>Diagnóstico</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell align="center">Ações</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {filteredRecords.map((record) => (
-                            <TableRow key={record.id} hover>
-                                <TableCell>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Avatar src={record.patientAvatar} sx={{ mr: 2 }}>
-                                            {!record.patientAvatar && <PersonIcon />}
-                                        </Avatar>
-                                        <Typography variant="body1">
-                                            {record.patientName}
+                {/* Aba de busca de pacientes */}
+                <Box role="tabpanel" hidden={tabValue !== 0} sx={{ p: 3 }}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        placeholder="Buscar paciente por nome ou e-mail"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        sx={{ mb: 3 }}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon />
+                                </InputAdornment>
+                            ),
+                        }}
+                    />
+
+                    {loading ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                            <CircularProgress />
+                        </Box>
+                    ) : (
+                        <Grid container spacing={2}>
+                            {filteredPatients.length > 0 ? (
+                                filteredPatients.map(patient => (
+                                    <Grid item xs={12} sm={6} md={4} key={patient.id}>
+                                        <Card
+                                            variant="outlined"
+                                            sx={{
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                '&:hover': {
+                                                    boxShadow: 3,
+                                                    transform: 'translateY(-4px)'
+                                                }
+                                            }}
+                                            onClick={() => handleSelectPatient(patient)}
+                                        >
+                                            <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                                    <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                                                        <PersonIcon />
+                                                    </Avatar>
+                                                    <Box>
+                                                        <Typography variant="h6" component="div">
+                                                            {patient.name}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            {patient.email}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Divider sx={{ my: 1 }} />
+                                                <Box sx={{ mt: 1 }}>
+                                                    <Typography variant="body2" component="div">
+                                                        <strong>Telefone:</strong> {patient.phone}
+                                                    </Typography>
+                                                    <Typography variant="body2" component="div">
+                                                        <strong>Data de Nasc.:</strong> {format(new Date(patient.birthDate), 'dd/MM/yyyy')}
+                                                    </Typography>
+                                                    <Typography variant="body2" component="div">
+                                                        <strong>Tipo Sanguíneo:</strong> {patient.bloodType || 'Não informado'}
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ mt: 'auto', pt: 2 }}>
+                                                    <Button
+                                                        fullWidth
+                                                        variant="contained"
+                                                        onClick={() => handleSelectPatient(patient)}
+                                                    >
+                                                        Acessar Prontuário
+                                                    </Button>
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                ))
+                            ) : (
+                                <Grid item xs={12}>
+                                    <Paper sx={{ p: 4, textAlign: 'center' }}>
+                                        <Typography variant="h6" color="text.secondary">
+                                            Nenhum paciente encontrado.
                                         </Typography>
-                                    </Box>
-                                </TableCell>
-                                <TableCell>{record.date}</TableCell>
-                                <TableCell>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <ListItemIcon sx={{ minWidth: 30 }}>
-                                            {getTypeIcon(record.type)}
-                                        </ListItemIcon>
-                                        {record.type}
-                                    </Box>
-                                </TableCell>
-                                <TableCell sx={{ maxWidth: 200 }}>
-                                    <Typography noWrap variant="body2">
-                                        {record.diagnosis}
-                                    </Typography>
-                                </TableCell>
-                                <TableCell>
-                                    <Chip
-                                        label={record.status}
-                                        color={getStatusColor(record.status) as any}
-                                        size="small"
-                                    />
-                                </TableCell>
-                                <TableCell align="center">
-                                    <IconButton
-                                        onClick={() => handleRecordView(record)}
-                                        size="small"
-                                        sx={{ mr: 1 }}
-                                    >
-                                        <VisibilityIcon fontSize="small" />
-                                    </IconButton>
-                                    <IconButton
-                                        onClick={(e) => handleMenuOpen(e, record)}
-                                        size="small"
-                                    >
-                                        <MoreVertIcon fontSize="small" />
-                                    </IconButton>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {filteredRecords.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                                    <Typography variant="body1" color="textSecondary">
-                                        Nenhum prontuário encontrado com os critérios selecionados.
-                                    </Typography>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                                    </Paper>
+                                </Grid>
+                            )}
+                        </Grid>
+                    )}
+                </Box>
 
-            {/* Menu de opções para cada prontuário */}
-            <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-            >
-                <MenuItem onClick={() => {
-                    if (selectedRecord) handleRecordEdit(selectedRecord.id);
-                    handleMenuClose();
-                }}>
-                    <EditIcon fontSize="small" sx={{ mr: 1 }} />
-                    Editar Prontuário
-                </MenuItem>
-                <MenuItem onClick={() => {
-                    if (selectedRecord) navigate(`/professional/patients/${selectedRecord.patientId}`);
-                    handleMenuClose();
-                }}>
-                    <PersonIcon fontSize="small" sx={{ mr: 1 }} />
-                    Ver Perfil do Paciente
-                </MenuItem>
-                <MenuItem onClick={() => {
-                    if (selectedRecord) navigate(`/professional/schedule/new?patientId=${selectedRecord.patientId}`);
-                    handleMenuClose();
-                }}>
-                    <EventIcon fontSize="small" sx={{ mr: 1 }} />
-                    Agendar Consulta
-                </MenuItem>
-            </Menu>
-
-            {/* Diálogo para visualizar prontuário */}
-            <Dialog
-                open={recordDialogOpen}
-                onClose={handleRecordClose}
-                maxWidth="md"
-                fullWidth
-            >
-                {selectedRecord && (
-                    <>
-                        <DialogTitle>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Avatar src={selectedRecord.patientAvatar} sx={{ mr: 2 }}>
-                                    {!selectedRecord.patientAvatar && <PersonIcon />}
-                                </Avatar>
+                {/* Aba de prontuário do paciente */}
+                <Box role="tabpanel" hidden={tabValue !== 1 || !selectedPatient} sx={{ p: 3 }}>
+                    {selectedPatient && (
+                        <>
+                            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Box>
-                                    <Typography variant="h6">
-                                        Prontuário de {selectedRecord.patientName}
+                                    <Typography variant="h5" gutterBottom>
+                                        Prontuário de {selectedPatient.name}
                                     </Typography>
-                                    <Typography variant="body2" color="textSecondary">
-                                        {selectedRecord.date} - {selectedRecord.type}
+                                    <Typography variant="body2" color="text.secondary">
+                                        <strong>Data de Nascimento:</strong> {format(new Date(selectedPatient.birthDate), 'dd/MM/yyyy')} |
+                                        <strong> Tipo Sanguíneo:</strong> {selectedPatient.bloodType || 'Não informado'}
                                     </Typography>
                                 </Box>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => handleOpenRecordDialog()}
+                                >
+                                    Novo Registro
+                                </Button>
                             </Box>
-                        </DialogTitle>
-                        <DialogContent dividers>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12}>
-                                    <Card variant="outlined">
-                                        <CardHeader
-                                            title="Informações do Atendimento"
-                                            avatar={<AccessTimeIcon color="primary" />}
-                                        />
-                                        <Divider />
-                                        <CardContent>
-                                            <Grid container spacing={2}>
-                                                <Grid item xs={12} md={6}>
-                                                    <Box sx={{ mb: 2 }}>
-                                                        <Typography variant="subtitle2" color="textSecondary">
-                                                            Status
-                                                        </Typography>
-                                                        <Chip
-                                                            label={selectedRecord.status}
-                                                            color={getStatusColor(selectedRecord.status) as any}
-                                                            size="small"
-                                                            sx={{ mt: 1 }}
-                                                        />
-                                                    </Box>
-                                                </Grid>
-                                                <Grid item xs={12} md={6}>
-                                                    <Box sx={{ mb: 2 }}>
-                                                        <Typography variant="subtitle2" color="textSecondary">
-                                                            Tipo de Atendimento
-                                                        </Typography>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                                            {getTypeIcon(selectedRecord.type)}
-                                                            <Typography sx={{ ml: 1 }}>
-                                                                {selectedRecord.type}
+
+                            {loading ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                                    <CircularProgress />
+                                </Box>
+                            ) : records.length > 0 ? (
+                                <Grid container spacing={3}>
+                                    {records.map(record => (
+                                        <Grid item xs={12} key={record.id}>
+                                            <Paper elevation={1} sx={{ p: 3, mb: 2 }}>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        <Avatar
+                                                            sx={{
+                                                                bgcolor:
+                                                                    record.type === 'consultation'
+                                                                        ? 'primary.main'
+                                                                        : record.type === 'exam'
+                                                                            ? 'secondary.main'
+                                                                            : 'info.main',
+                                                                mr: 2
+                                                            }}
+                                                        >
+                                                            {record.type === 'consultation' ? <MedicalServicesIcon /> :
+                                                                record.type === 'exam' ? <BiotechIcon /> :
+                                                                    <LocalHospitalIcon />}
+                                                        </Avatar>
+                                                        <Box>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                <Typography variant="h6">
+                                                                    {record.title}
+                                                                </Typography>
+                                                                <Chip
+                                                                    size="small"
+                                                                    label={
+                                                                        record.type === 'consultation' ? 'Consulta' :
+                                                                            record.type === 'exam' ? 'Exame' : 'Procedimento'
+                                                                    }
+                                                                    color={
+                                                                        record.type === 'consultation' ? 'primary' :
+                                                                            record.type === 'exam' ? 'secondary' : 'info'
+                                                                    }
+                                                                />
+                                                            </Box>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                {formatDate(record.date)}
                                                             </Typography>
                                                         </Box>
                                                     </Box>
+                                                    <Box>
+                                                        <IconButton
+                                                            color="primary"
+                                                            onClick={() => handleOpenRecordDialog(record)}
+                                                            size="small"
+                                                        >
+                                                            <EditIcon />
+                                                        </IconButton>
+                                                    </Box>
+                                                </Box>
+
+                                                <Divider sx={{ my: 2 }} />
+
+                                                <Grid container spacing={2}>
+                                                    <Grid item xs={12}>
+                                                        <Typography variant="body1" paragraph>
+                                                            {record.description}
+                                                        </Typography>
+                                                    </Grid>
+
+                                                    {record.diagnosis && (
+                                                        <Grid item xs={12} md={6}>
+                                                            <Typography variant="subtitle2" color="primary">
+                                                                Diagnóstico:
+                                                            </Typography>
+                                                            <Typography variant="body2" paragraph>
+                                                                {record.diagnosis}
+                                                            </Typography>
+                                                        </Grid>
+                                                    )}
+
+                                                    {record.symptoms && (
+                                                        <Grid item xs={12} md={6}>
+                                                            <Typography variant="subtitle2" color="primary">
+                                                                Sintomas:
+                                                            </Typography>
+                                                            <Typography variant="body2" paragraph>
+                                                                {record.symptoms}
+                                                            </Typography>
+                                                        </Grid>
+                                                    )}
+
+                                                    {record.treatment && (
+                                                        <Grid item xs={12} md={6}>
+                                                            <Typography variant="subtitle2" color="primary">
+                                                                Tratamento:
+                                                            </Typography>
+                                                            <Typography variant="body2" paragraph>
+                                                                {record.treatment}
+                                                            </Typography>
+                                                        </Grid>
+                                                    )}
+
+                                                    {record.notes && (
+                                                        <Grid item xs={12} md={6}>
+                                                            <Typography variant="subtitle2" color="primary">
+                                                                Observações:
+                                                            </Typography>
+                                                            <Typography variant="body2" paragraph>
+                                                                {record.notes}
+                                                            </Typography>
+                                                        </Grid>
+                                                    )}
                                                 </Grid>
-                                            </Grid>
-                                        </CardContent>
-                                    </Card>
+
+                                                {/* Prescrições */}
+                                                {record.prescriptions && record.prescriptions.length > 0 && (
+                                                    <>
+                                                        <Divider sx={{ my: 2 }} />
+                                                        <Typography variant="subtitle1" color="primary" sx={{ mb: 1 }}>
+                                                            Prescrições Médicas
+                                                        </Typography>
+
+                                                        <Grid container spacing={1}>
+                                                            {record.prescriptions.map(prescription => (
+                                                                <Grid item xs={12} key={prescription.id}>
+                                                                    <Card variant="outlined" sx={{ mb: 1 }}>
+                                                                        <CardContent>
+                                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                                <Typography variant="subtitle2">
+                                                                                    Emitida em: {format(new Date(prescription.date), 'dd/MM/yyyy')}
+                                                                                </Typography>
+                                                                                <Chip
+                                                                                    size="small"
+                                                                                    label={
+                                                                                        prescription.status === 'active' ? 'Ativa' :
+                                                                                            prescription.status === 'expired' ? 'Expirada' : 'Cancelada'
+                                                                                    }
+                                                                                    color={
+                                                                                        prescription.status === 'active' ? 'success' :
+                                                                                            prescription.status === 'expired' ? 'warning' : 'error'
+                                                                                    }
+                                                                                />
+                                                                            </Box>
+
+                                                                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                                                                <strong>Medicamentos:</strong>
+                                                                            </Typography>
+                                                                            <ul>
+                                                                                {prescription.medications.map((med, index) => (
+                                                                                    <li key={index}>
+                                                                                        <Typography variant="body2">
+                                                                                            {med.name} - {med.dosage} ({med.frequency}) - {med.duration}
+                                                                                        </Typography>
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+
+                                                                            <Typography variant="body2">
+                                                                                <strong>Instruções:</strong> {prescription.instructions}
+                                                                            </Typography>
+                                                                        </CardContent>
+                                                                    </Card>
+                                                                </Grid>
+                                                            ))}
+                                                        </Grid>
+                                                    </>
+                                                )}
+
+                                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                                                    <Button
+                                                        variant="outlined"
+                                                        startIcon={<MedicalServicesIcon />}
+                                                        onClick={() => {
+                                                            setSelectedRecord(record);
+                                                            handleOpenPrescriptionDialog();
+                                                        }}
+                                                        sx={{ mr: 1 }}
+                                                    >
+                                                        Emitir Prescrição
+                                                    </Button>
+                                                </Box>
+                                            </Paper>
+                                        </Grid>
+                                    ))}
                                 </Grid>
+                            ) : (
+                                <Paper elevation={0} sx={{ p: 4, textAlign: 'center', bgcolor: 'background.default' }}>
+                                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                                        Nenhum registro encontrado para este paciente.
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<AddIcon />}
+                                        onClick={() => handleOpenRecordDialog()}
+                                        sx={{ mt: 2 }}
+                                    >
+                                        Adicionar Primeiro Registro
+                                    </Button>
+                                </Paper>
+                            )}
+                        </>
+                    )}
+                </Box>
+            </Paper>
 
-                                <Grid item xs={12}>
-                                    <Card variant="outlined">
-                                        <CardHeader
-                                            title="Diagnóstico"
-                                            avatar={<LocalHospitalIcon color="error" />}
-                                        />
-                                        <Divider />
-                                        <CardContent>
-                                            <Typography>
-                                                {selectedRecord.diagnosis}
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-
-                                {selectedRecord.prescription && (
-                                    <Grid item xs={12}>
-                                        <Card variant="outlined">
-                                            <CardHeader
-                                                title="Prescrição"
-                                                avatar={<MedicalServicesIcon color="info" />}
-                                            />
-                                            <Divider />
-                                            <CardContent>
-                                                <Typography>
-                                                    {selectedRecord.prescription}
-                                                </Typography>
-                                            </CardContent>
-                                        </Card>
-                                    </Grid>
-                                )}
-
-                                {selectedRecord.notes && (
-                                    <Grid item xs={12}>
-                                        <Card variant="outlined">
-                                            <CardHeader
-                                                title="Anotações"
-                                                avatar={<AssignmentIcon color="success" />}
-                                            />
-                                            <Divider />
-                                            <CardContent>
-                                                <Typography>
-                                                    {selectedRecord.notes}
-                                                </Typography>
-                                            </CardContent>
-                                        </Card>
-                                    </Grid>
-                                )}
-                            </Grid>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={handleRecordClose}>Fechar</Button>
-                            <Button
-                                variant="contained"
-                                startIcon={<EditIcon />}
-                                onClick={() => {
-                                    handleRecordEdit(selectedRecord.id);
-                                    handleRecordClose();
-                                }}
-                            >
-                                Editar
-                            </Button>
-                        </DialogActions>
-                    </>
-                )}
+            {/* Modal para adicionar/editar prontuário */}
+            <Dialog
+                open={openRecordDialog}
+                onClose={handleCloseRecordDialog}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    {selectedRecord ? 'Editar Registro de Prontuário' : 'Novo Registro de Prontuário'}
+                </DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel id="record-type-label">Tipo de Registro</InputLabel>
+                                <Select
+                                    labelId="record-type-label"
+                                    id="record-type"
+                                    name="type"
+                                    value={newRecord.type}
+                                    onChange={handleRecordInputChange}
+                                    label="Tipo de Registro"
+                                >
+                                    <MenuItem value="consultation">Consulta</MenuItem>
+                                    <MenuItem value="exam">Exame</MenuItem>
+                                    <MenuItem value="procedure">Procedimento</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Título"
+                                name="title"
+                                value={newRecord.title}
+                                onChange={handleRecordInputChange}
+                                required
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="Descrição"
+                                name="description"
+                                value={newRecord.description}
+                                onChange={handleRecordInputChange}
+                                multiline
+                                rows={3}
+                                required
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Diagnóstico"
+                                name="diagnosis"
+                                value={newRecord.diagnosis}
+                                onChange={handleRecordInputChange}
+                                multiline
+                                rows={2}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Sintomas"
+                                name="symptoms"
+                                value={newRecord.symptoms}
+                                onChange={handleRecordInputChange}
+                                multiline
+                                rows={2}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Tratamento"
+                                name="treatment"
+                                value={newRecord.treatment}
+                                onChange={handleRecordInputChange}
+                                multiline
+                                rows={2}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Observações"
+                                name="notes"
+                                value={newRecord.notes}
+                                onChange={handleRecordInputChange}
+                                multiline
+                                rows={2}
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseRecordDialog} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handleSaveRecord}
+                        variant="contained"
+                        disabled={!newRecord.title || !newRecord.description || loading}
+                        startIcon={loading && <CircularProgress size={20} />}
+                    >
+                        {selectedRecord ? 'Atualizar' : 'Salvar'}
+                    </Button>
+                </DialogActions>
             </Dialog>
+
+            {/* Modal para prescrições */}
+            <Dialog
+                open={openPrescriptionDialog}
+                onClose={handleClosePrescriptionDialog}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    Nova Prescrição Médica
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="subtitle2" color="primary" sx={{ mb: 2, mt: 1 }}>
+                        Adicionar Medicamentos
+                    </Typography>
+
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Nome do Medicamento"
+                                name="name"
+                                value={tempMedication.name}
+                                onChange={handleMedicationInputChange}
+                                size="small"
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Dosagem (ex: 500mg)"
+                                name="dosage"
+                                value={tempMedication.dosage}
+                                onChange={handleMedicationInputChange}
+                                size="small"
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                            <TextField
+                                fullWidth
+                                label="Frequência (ex: 8/8h)"
+                                name="frequency"
+                                value={tempMedication.frequency}
+                                onChange={handleMedicationInputChange}
+                                size="small"
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                            <TextField
+                                fullWidth
+                                label="Duração (ex: 7 dias)"
+                                name="duration"
+                                value={tempMedication.duration}
+                                onChange={handleMedicationInputChange}
+                                size="small"
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                            <Box sx={{ height: '100%', display: 'flex', alignItems: 'center' }}>
+                                <Button
+                                    variant="outlined"
+                                    onClick={handleAddMedication}
+                                    disabled={!tempMedication.name || !tempMedication.dosage}
+                                    fullWidth
+                                    startIcon={<AddIcon />}
+                                >
+                                    Adicionar
+                                </Button>
+                            </Box>
+                        </Grid>
+
+                        {tempMedication.name && (
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Instruções Específicas"
+                                    name="instructions"
+                                    value={tempMedication.instructions}
+                                    onChange={handleMedicationInputChange}
+                                    size="small"
+                                    placeholder="Ex: Tomar após as refeições"
+                                />
+                            </Grid>
+                        )}
+                    </Grid>
+
+                    {newPrescription.medications && newPrescription.medications.length > 0 && (
+                        <>
+                            <Typography variant="subtitle2" color="primary" sx={{ mt: 3, mb: 1 }}>
+                                Medicamentos na Prescrição
+                            </Typography>
+
+                            <List dense>
+                                {newPrescription.medications.map((med, index) => (
+                                    <ListItem
+                                        key={index}
+                                        secondaryAction={
+                                            <IconButton edge="end" onClick={() => handleRemoveMedication(index)}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        }
+                                        divider
+                                    >
+                                        <ListItemAvatar>
+                                            <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                                <MedicalServicesIcon />
+                                            </Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText
+                                            primary={`${med.name} - ${med.dosage}`}
+                                            secondary={`${med.frequency} - ${med.duration} ${med.instructions ? `- ${med.instructions}` : ''}`}
+                                        />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </>
+                    )}
+
+                    <Typography variant="subtitle2" color="primary" sx={{ mt: 3, mb: 1 }}>
+                        Instruções Gerais
+                    </Typography>
+
+                    <TextField
+                        fullWidth
+                        label="Instruções para o paciente"
+                        name="instructions"
+                        value={newPrescription.instructions}
+                        onChange={handlePrescriptionInputChange}
+                        multiline
+                        rows={3}
+                        placeholder="Ex: Manter repouso, ingerir bastante água, retornar em caso de piora..."
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClosePrescriptionDialog} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handleSavePrescription}
+                        variant="contained"
+                        disabled={
+                            !newPrescription.medications?.length ||
+                            !newPrescription.instructions ||
+                            loading
+                        }
+                        startIcon={loading && <CircularProgress size={20} />}
+                        color="primary"
+                    >
+                        Emitir Prescrição
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar para mensagens */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={5000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={handleCloseSnackbar}
+                    severity={snackbar.severity}
+                    sx={{ width: '100%' }}
+                    variant="filled"
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
-} 
+};
+
+export default ProfessionalRecords; 

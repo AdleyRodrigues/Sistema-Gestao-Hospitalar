@@ -38,6 +38,8 @@ import {
     Group,
     Business,
     Logout,
+    Security,
+    PrivacyTip,
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { UserRole } from '../../types/auth';
@@ -54,6 +56,9 @@ const implementedPages = [
     '/professional/dashboard',
     '/patient/dashboard',
     '/login',
+    '/patient/privacy-settings',
+    '/professional/privacy-settings',
+    '/admin/privacy-settings',
 ];
 
 // Menus para diferentes perfis de usuário
@@ -63,6 +68,7 @@ const menuItems = {
         { text: 'Consultas', icon: <Event />, path: '/patient/appointments', implemented: false },
         { text: 'Histórico Médico', icon: <Description />, path: '/patient/medical-history', implemented: false },
         { text: 'Telemedicina', icon: <VideoCall />, path: '/patient/telemedicine', implemented: false },
+        { text: 'Configurações de Privacidade', icon: <PrivacyTip />, path: '/patient/privacy-settings', implemented: true },
     ],
     professional: [
         { text: 'Dashboard', icon: <Dashboard />, path: '/professional/dashboard', implemented: true },
@@ -70,6 +76,7 @@ const menuItems = {
         { text: 'Prontuários', icon: <Assignment />, path: '/professional/records', implemented: false },
         { text: 'Pacientes', icon: <Person />, path: '/professional/patients', implemented: false },
         { text: 'Telemedicina', icon: <VideoCall />, path: '/professional/telemedicine', implemented: false },
+        { text: 'Configurações de Privacidade', icon: <PrivacyTip />, path: '/professional/privacy-settings', implemented: true },
     ],
     admin: [
         { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard', implemented: true },
@@ -77,6 +84,7 @@ const menuItems = {
         { text: 'Hospitais', icon: <Business />, path: '/admin/hospitals', implemented: false },
         { text: 'Profissionais', icon: <Group />, path: '/admin/professionals', implemented: false },
         { text: 'Configurações', icon: <Settings />, path: '/admin/settings', implemented: false },
+        { text: 'Configurações de Privacidade', icon: <PrivacyTip />, path: '/admin/privacy-settings', implemented: true },
     ],
 };
 

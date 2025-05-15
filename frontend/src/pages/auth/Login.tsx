@@ -15,12 +15,15 @@ import {
     Alert,
     Fade,
     CircularProgress,
+    Link,
 } from '@mui/material';
 import { Visibility, VisibilityOff, MedicalServices } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../hooks/useAuth';
+import ConsentModal from '../../components/privacy/ConsentModal';
+import { useNavigate } from 'react-router-dom';
 
 // Schema de validação com Zod
 const loginSchema = z.object({
@@ -33,9 +36,12 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login = () => {
     const { login, loading } = useAuth();
+    const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const [loginError, setLoginError] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
+    const [showConsentModal, setShowConsentModal] = useState(false);
+    const [pendingLoginData, setPendingLoginData] = useState<LoginFormData | null>(null);
 
     // Efeito para animação de entrada
     useEffect(() => {
@@ -55,8 +61,24 @@ const Login = () => {
         }
     });
 
-    const onSubmit = async (data: LoginFormData) => {
+    const handleLoginAttempt = async (data: LoginFormData) => {
         setLoginError(null);
+
+        // Simulação - Na prática, você verificaria no backend se o usuário já aceitou os termos
+        const userHasConsented = localStorage.getItem(`consent_${data.email}`);
+
+        if (!userHasConsented) {
+            // Se ainda não deu consentimento, mostra o modal e salva os dados de login para uso posterior
+            setPendingLoginData(data);
+            setShowConsentModal(true);
+            return;
+        }
+
+        // Se já deu consentimento, procede com o login normal
+        await processLogin(data);
+    };
+
+    const processLogin = async (data: LoginFormData) => {
         try {
             const success = await login(data.email, data.password);
             if (!success) {
@@ -69,6 +91,28 @@ const Login = () => {
 
     const handleTogglePasswordVisibility = () => {
         setShowPassword(!showPassword);
+    };
+
+    const handleConsentAccept = () => {
+        if (pendingLoginData) {
+            // Salva o consentimento (em produção, isso seria feito no backend)
+            localStorage.setItem(`consent_${pendingLoginData.email}`, 'true');
+
+            // Prossegue com o login
+            processLogin(pendingLoginData);
+            setShowConsentModal(false);
+            setPendingLoginData(null);
+        }
+    };
+
+    const handleConsentDecline = () => {
+        setShowConsentModal(false);
+        setPendingLoginData(null);
+        setLoginError('Para utilizar o sistema, é necessário aceitar a Política de Privacidade.');
+    };
+
+    const handlePrivacyPolicyClick = () => {
+        navigate('/privacy-policy');
     };
 
     return (
@@ -141,7 +185,7 @@ const Login = () => {
 
                         <Box
                             component="form"
-                            onSubmit={handleSubmit(onSubmit)}
+                            onSubmit={handleSubmit(handleLoginAttempt)}
                             sx={{ width: '100%' }}
                         >
                             <TextField
@@ -227,6 +271,17 @@ const Login = () => {
                                 ) : 'Entrar'}
                             </Button>
 
+                            <Box sx={{ textAlign: 'center', mt: 1 }}>
+                                <Link
+                                    component="button"
+                                    variant="body2"
+                                    onClick={handlePrivacyPolicyClick}
+                                    sx={{ textDecoration: 'none' }}
+                                >
+                                    Política de Privacidade
+                                </Link>
+                            </Box>
+
                             <Box sx={{
                                 mt: 3,
                                 p: 2,
@@ -252,6 +307,13 @@ const Login = () => {
                     </Box>
                 </Paper>
             </Fade>
+
+            {/* Modal de Consentimento */}
+            <ConsentModal
+                open={showConsentModal}
+                onAccept={handleConsentAccept}
+                onDecline={handleConsentDecline}
+            />
         </Container>
     );
 };

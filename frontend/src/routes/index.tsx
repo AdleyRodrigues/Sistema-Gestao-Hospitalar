@@ -30,6 +30,10 @@ const ProfessionalPatients = lazy(() => import('../pages/professional/Patients')
 const ProfessionalRecords = lazy(() => import('../pages/professional/Records'));
 const ProfessionalTelemedicine = lazy(() => import('../pages/professional/Telemedicine'));
 
+// Páginas de Privacidade
+const PrivacyPolicy = lazy(() => import('../pages/privacy/PrivacyPolicy'));
+const PrivacySettings = lazy(() => import('../pages/privacy/PrivacySettings'));
+
 // Layout protegido baseado no perfil do usuário
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
     const { isAuthenticated, user } = useAuth();
@@ -61,6 +65,14 @@ export default function Router() {
             element: (
                 <Suspense fallback={null}>
                     <Login />
+                </Suspense>
+            ),
+        },
+        {
+            path: 'privacy-policy',
+            element: (
+                <Suspense fallback={null}>
+                    <PrivacyPolicy />
                 </Suspense>
             ),
         },
@@ -105,6 +117,16 @@ export default function Router() {
                         <ProtectedRoute allowedRoles={['patient']}>
                             <Suspense fallback={null}>
                                 <PatientTelemedicine />
+                            </Suspense>
+                        </ProtectedRoute>
+                    ),
+                },
+                {
+                    path: 'privacy-settings',
+                    element: (
+                        <ProtectedRoute allowedRoles={['patient']}>
+                            <Suspense fallback={null}>
+                                <PrivacySettings />
                             </Suspense>
                         </ProtectedRoute>
                     ),
@@ -166,6 +188,16 @@ export default function Router() {
                         </ProtectedRoute>
                     ),
                 },
+                {
+                    path: 'privacy-settings',
+                    element: (
+                        <ProtectedRoute allowedRoles={['professional']}>
+                            <Suspense fallback={null}>
+                                <PrivacySettings />
+                            </Suspense>
+                        </ProtectedRoute>
+                    ),
+                },
             ],
         },
 
@@ -183,7 +215,16 @@ export default function Router() {
                         </ProtectedRoute>
                     ),
                 },
-                // Outras rotas de admin serão adicionadas aqui
+                {
+                    path: 'privacy-settings',
+                    element: (
+                        <ProtectedRoute allowedRoles={['admin']}>
+                            <Suspense fallback={null}>
+                                <PrivacySettings />
+                            </Suspense>
+                        </ProtectedRoute>
+                    ),
+                },
             ],
         },
 

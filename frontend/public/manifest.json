@@ -1,0 +1,28 @@
+{
+    "name": "VidaPlus - Sistema de Gestão Hospitalar",
+    "short_name": "VidaPlus",
+    "description": "Sistema de Gestão Hospitalar e Serviços de Saúde",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#1976D2",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "48x48 72x72 96x96 128x128 256x256",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/maskable_icon.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        }
+    ]
+}

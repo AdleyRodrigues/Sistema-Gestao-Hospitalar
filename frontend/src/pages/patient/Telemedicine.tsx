@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Box,
     Typography,
@@ -19,7 +19,17 @@ import {
     ListItemText,
     ListItemAvatar,
     Tab,
-    Tabs
+    Tabs,
+    IconButton,
+    CircularProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Tooltip,
+    Alert,
+    Snackbar,
+    Badge
 } from '@mui/material';
 import {
     VideoCall,
@@ -28,86 +38,407 @@ import {
     History,
     MedicalServices,
     Videocam,
+    VideocamOff,
+    Mic,
+    MicOff,
+    ScreenShare,
+    StopScreenShare,
+    Chat,
+    Send,
+    PersonAdd,
+    CallEnd,
     Search,
     Event,
     Description,
-    Info
+    Info,
+    Close
 } from '@mui/icons-material';
+import { useAuth } from '../../hooks/useAuth';
+import { api } from '../../services/api';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+interface Appointment {
+    id: string;
+    patientId: string;
+    professionalId: string;
+    date: string;
+    status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+    type: 'consultation' | 'return' | 'telemedicine';
+    professional?: {
+        id: string;
+        name: string;
+        specialty: string;
+        avatar?: string;
+    };
+}
+
+interface Message {
+    id: string;
+    senderId: string;
+    senderName: string;
+    senderType: 'patient' | 'professional';
+    content: string;
+    timestamp: string;
+}
 
 const PatientTelemedicine = () => {
+    const { user } = useAuth();
     const [selectedTab, setSelectedTab] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+    const [inCall, setInCall] = useState(false);
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+    const [callControls, setCallControls] = useState({
+        video: true,
+        audio: true,
+        screenShare: false,
+        receivingAudio: true
+    });
+    const [callTime, setCallTime] = useState(0);
+    const [callTimeInterval, setCallTimeInterval] = useState<NodeJS.Timeout | null>(null);
+    const [showChat, setShowChat] = useState(false);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+    const [feedback, setFeedback] = useState({
+        rating: 0,
+        comment: ''
+    });
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success' as 'success' | 'error' | 'info' | 'warning'
+    });
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setSelectedTab(newValue);
-    };
+    const localVideoRef = useRef<HTMLVideoElement>(null);
+    const remoteVideoRef = useRef<HTMLVideoElement>(null);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
 
-    // Dados mockados de teleconsultas
-    const upcomingAppointments = [
-        {
-            id: 1,
-            doctor: 'Dra. Ana Souza',
-            specialty: 'Cardiologia',
-            image: 'https://xsgames.co/randomusers/assets/avatars/female/3.jpg',
-            date: '22/04/2025',
-            time: '14:30',
-            status: 'Agendada'
-        },
-        {
-            id: 2,
-            doctor: 'Dr. Ricardo Mendes',
-            specialty: 'Clínico Geral',
-            image: 'https://xsgames.co/randomusers/assets/avatars/male/4.jpg',
-            date: '28/04/2025',
-            time: '15:45',
-            status: 'Agendada'
+    // Inicializa a página
+    useEffect(() => {
+        if (user) {
+            fetchTeleconsultations();
         }
-    ];
 
-    const pastAppointments = [
-        {
-            id: 1,
-            doctor: 'Dr. Paulo Oliveira',
-            specialty: 'Ortopedia',
-            image: 'https://xsgames.co/randomusers/assets/avatars/male/5.jpg',
-            date: '15/03/2025',
-            time: '16:00',
-            status: 'Concluída'
-        },
-        {
-            id: 2,
-            doctor: 'Dra. Maria Santos',
-            specialty: 'Dermatologia',
-            image: 'https://xsgames.co/randomusers/assets/avatars/female/4.jpg',
-            date: '28/02/2025',
-            time: '11:30',
-            status: 'Concluída'
-        },
-    ];
+        // Cleanup
+        return () => {
+            stopStreams();
+            if (callTimeInterval) {
+                clearInterval(callTimeInterval);
+            }
+        };
+    }, [user]);
 
-    const specialties = [
-        { id: 1, name: 'Cardiologia' },
-        { id: 2, name: 'Dermatologia' },
-        { id: 3, name: 'Ortopedia' },
-        { id: 4, name: 'Clínico Geral' },
-        { id: 5, name: 'Pediatria' },
-        { id: 6, name: 'Psiquiatria' }
-    ];
+    // Scroll no chat quando há novas mensagens
+    useEffect(() => {
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+    }, [messages]);
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [activeStep, setActiveStep] = useState(0);
+    // Atualizar vídeo local quando o stream muda
+    useEffect(() => {
+        if (localVideoRef.current && localStream) {
+            localVideoRef.current.srcObject = localStream;
+        }
+    }, [localStream]);
 
-    const steps = ['Selecionar especialidade', 'Escolher profissional', 'Agendar data/hora', 'Confirmar'];
+    // Atualizar vídeo remoto quando o stream muda
+    useEffect(() => {
+        if (remoteVideoRef.current && remoteStream) {
+            remoteVideoRef.current.srcObject = remoteStream;
+        }
+    }, [remoteStream]);
 
-    const handleNext = () => {
-        setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    const fetchTeleconsultations = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get(`/appointments?patientId=${user?.id}&type=telemedicine&_expand=professional`);
+            // Filtrar apenas consultas futuras ou em andamento
+            const activeTeleconsultations = response.data.filter((appointment: Appointment) =>
+                appointment.status === 'scheduled' || appointment.status === 'in_progress'
+            );
+            setAppointments(activeTeleconsultations);
+        } catch (error) {
+            console.error('Erro ao buscar teleconsultas:', error);
+            showSnackbar('Erro ao carregar suas teleconsultas', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleBack = () => {
-        setActiveStep((prevActiveStep) => prevActiveStep - 1);
+    const handleJoinCall = async (appointment: Appointment) => {
+        setSelectedAppointment(appointment);
+        setLoading(true);
+
+        try {
+            // Inicializa câmera e microfone
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
+            setLocalStream(stream);
+
+            // Simula um stream remoto (em uma implementação real, isso viria da conexão WebRTC)
+            const fakeRemoteStream = new MediaStream();
+            // Normalmente, adicionaríamos faixas recebidas do peer remoto ao remoteStream
+            setRemoteStream(fakeRemoteStream);
+
+            // Simula o início da chamada
+            setInCall(true);
+
+            // Inicia o timer de duração da chamada
+            const interval = setInterval(() => {
+                setCallTime(prev => prev + 1);
+            }, 1000);
+            setCallTimeInterval(interval);
+
+            // Atualiza o status da consulta para "em andamento"
+            await api.patch(`/appointments/${appointment.id}`, {
+                status: 'in_progress'
+            });
+
+            // Carrega mensagens do chat (simulado)
+            const initialMessages: Message[] = [
+                {
+                    id: '1',
+                    senderId: appointment.professional?.id || '',
+                    senderName: appointment.professional?.name || 'Profissional',
+                    senderType: 'professional',
+                    content: 'Olá! Estou iniciando a teleconsulta. Como posso ajudar hoje?',
+                    timestamp: new Date().toISOString()
+                }
+            ];
+            setMessages(initialMessages);
+
+        } catch (error) {
+            console.error('Erro ao iniciar teleconsulta:', error);
+            showSnackbar('Erro ao iniciar a teleconsulta. Verifique suas permissões de câmera e microfone.', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleReset = () => {
-        setActiveStep(0);
+    const handleEndCall = async () => {
+        // Limpa o intervalo do timer
+        if (callTimeInterval) {
+            clearInterval(callTimeInterval);
+            setCallTimeInterval(null);
+        }
+
+        // Pára os streams
+        stopStreams();
+
+        // Simula o fim da chamada
+        setInCall(false);
+
+        // Atualiza o status da consulta para "completed"
+        if (selectedAppointment) {
+            try {
+                await api.patch(`/appointments/${selectedAppointment.id}`, {
+                    status: 'completed'
+                });
+
+                // Mostra a janela de feedback
+                setShowFeedbackDialog(true);
+
+                // Atualiza a lista de consultas
+                fetchTeleconsultations();
+            } catch (error) {
+                console.error('Erro ao finalizar teleconsulta:', error);
+                showSnackbar('Erro ao finalizar a teleconsulta.', 'error');
+            }
+        }
+    };
+
+    const stopStreams = () => {
+        // Para o stream de vídeo local
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            setLocalStream(null);
+        }
+
+        // Limpa o stream de vídeo remoto
+        setRemoteStream(null);
+    };
+
+    const handleToggleVideo = () => {
+        if (localStream) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = !callControls.video;
+                setCallControls(prev => ({ ...prev, video: !prev.video }));
+            }
+        }
+    };
+
+    const handleToggleAudio = () => {
+        if (localStream) {
+            const audioTrack = localStream.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = !callControls.audio;
+                setCallControls(prev => ({ ...prev, audio: !prev.audio }));
+            }
+        }
+    };
+
+    const handleToggleRemoteAudio = () => {
+        if (remoteVideoRef.current) {
+            remoteVideoRef.current.muted = callControls.receivingAudio;
+            setCallControls(prev => ({ ...prev, receivingAudio: !prev.receivingAudio }));
+        }
+    };
+
+    const handleToggleScreenShare = async () => {
+        try {
+            if (callControls.screenShare) {
+                // Para compartilhamento de tela
+                if (localStream) {
+                    // Volta para o stream de câmera
+                    const newStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: true
+                    });
+
+                    // Substitui o stream atual
+                    const oldStream = localStream;
+                    setLocalStream(newStream);
+
+                    // Para as tracks antigas
+                    oldStream.getTracks().forEach(track => track.stop());
+                }
+            } else {
+                // Inicia compartilhamento de tela
+                const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true
+                });
+
+                // Se já existe um stream local, preservar o áudio
+                if (localStream) {
+                    const audioTrack = localStream.getAudioTracks()[0];
+                    if (audioTrack) {
+                        screenStream.addTrack(audioTrack);
+                    }
+
+                    // Para as tracks antigas
+                    const oldStream = localStream;
+                    setLocalStream(screenStream);
+
+                    // Para apenas as tracks de vídeo antigas
+                    oldStream.getVideoTracks().forEach(track => track.stop());
+                } else {
+                    setLocalStream(screenStream);
+                }
+            }
+
+            setCallControls(prev => ({ ...prev, screenShare: !prev.screenShare }));
+        } catch (error) {
+            console.error('Erro ao compartilhar tela:', error);
+            showSnackbar('Erro ao compartilhar tela. Verifique suas permissões.', 'error');
+        }
+    };
+
+    const handleSendMessage = () => {
+        if (!newMessage.trim()) return;
+
+        const message: Message = {
+            id: Date.now().toString(),
+            senderId: user?.id || '',
+            senderName: user?.name || 'Paciente',
+            senderType: 'patient',
+            content: newMessage.trim(),
+            timestamp: new Date().toISOString()
+        };
+
+        setMessages(prev => [...prev, message]);
+        setNewMessage('');
+
+        // Simula uma resposta após 2 segundos
+        setTimeout(() => {
+            const professionalMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                senderId: selectedAppointment?.professional?.id || '',
+                senderName: selectedAppointment?.professional?.name || 'Profissional',
+                senderType: 'professional',
+                content: `Obrigado pela sua mensagem. ${Math.random() > 0.5 ? 'Poderia dar mais detalhes sobre seus sintomas?' : 'Entendi, vou anotar essas informações.'}`,
+                timestamp: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, professionalMessage]);
+        }, 2000);
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    };
+
+    const handleSubmitFeedback = async () => {
+        try {
+            // Aqui seria feita uma chamada à API para salvar o feedback
+            // await api.post('/teleconsultation-feedback', {
+            //   appointmentId: selectedAppointment?.id,
+            //   patientId: user?.id,
+            //   professionalId: selectedAppointment?.professional?.id,
+            //   rating: feedback.rating,
+            //   comment: feedback.comment
+            // });
+
+            showSnackbar('Obrigado pelo seu feedback!', 'success');
+            setShowFeedbackDialog(false);
+
+            // Reseta o objeto de feedback
+            setFeedback({
+                rating: 0,
+                comment: ''
+            });
+
+            // Reseta a teleconsulta selecionada
+            setSelectedAppointment(null);
+
+        } catch (error) {
+            console.error('Erro ao enviar feedback:', error);
+            showSnackbar('Erro ao enviar feedback, mas sua consulta foi finalizada com sucesso.', 'error');
+        }
+    };
+
+    const formatCallTime = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        return `${hours > 0 ? `${hours}:` : ''}${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
+    const getAppointmentStatusLabel = (status: string) => {
+        switch (status) {
+            case 'scheduled':
+                return { label: 'Agendada', color: 'success' as const };
+            case 'in_progress':
+                return { label: 'Em Andamento', color: 'warning' as const };
+            case 'completed':
+                return { label: 'Concluída', color: 'info' as const };
+            case 'cancelled':
+                return { label: 'Cancelada', color: 'error' as const };
+            default:
+                return { label: status, color: 'default' as const };
+        }
+    };
+
+    const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
+        setSnackbar({
+            open: true,
+            message,
+            severity
+        });
+    };
+
+    const handleCloseSnackbar = () => {
+        setSnackbar(prev => ({ ...prev, open: false }));
     };
 
     return (
@@ -124,7 +455,9 @@ const PatientTelemedicine = () => {
                     <Paper elevation={2} sx={{ p: 0 }}>
                         <Tabs
                             value={selectedTab}
-                            onChange={handleTabChange}
+                            onChange={(event, newValue) => {
+                                setSelectedTab(newValue);
+                            }}
                             variant="fullWidth"
                         >
                             <Tab icon={<Videocam />} label="MINHAS CONSULTAS" />
@@ -141,121 +474,100 @@ const PatientTelemedicine = () => {
                                         </Typography>
                                     </Box>
 
-                                    {upcomingAppointments.map((appointment) => (
-                                        <Card key={appointment.id} variant="outlined" sx={{ mb: 2 }}>
-                                            <CardContent>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                        <Avatar
-                                                            src={appointment.image}
-                                                            alt={appointment.doctor}
-                                                            sx={{ width: 56, height: 56, mr: 2 }}
-                                                        />
-                                                        <Box>
-                                                            <Typography variant="h6">
-                                                                {appointment.doctor}
-                                                            </Typography>
-                                                            <Typography variant="body2" color="text.secondary">
-                                                                {appointment.specialty}
-                                                            </Typography>
-                                                        </Box>
-                                                    </Box>
-                                                    <Chip
-                                                        label={appointment.status}
-                                                        color="primary"
-                                                    />
-                                                </Box>
+                                    {loading ? (
+                                        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                                            <CircularProgress />
+                                        </Box>
+                                    ) : appointments.length > 0 ? (
+                                        <Grid container spacing={3}>
+                                            {appointments.map(appointment => {
+                                                const appointmentDate = new Date(appointment.date);
+                                                const isToday = new Date().toDateString() === appointmentDate.toDateString();
+                                                const statusInfo = getAppointmentStatusLabel(appointment.status);
 
-                                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-                                                    <Event fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
-                                                    <Typography variant="body2">
-                                                        {appointment.date}
-                                                    </Typography>
-                                                    <AccessTime fontSize="small" sx={{ ml: 2, mr: 1, color: 'primary.main' }} />
-                                                    <Typography variant="body2">
-                                                        {appointment.time}
-                                                    </Typography>
-                                                </Box>
-
-                                                <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-                                                    <Button
-                                                        variant="contained"
-                                                        startIcon={<VideoCall />}
-                                                        fullWidth
-                                                    >
-                                                        Entrar na Sala
-                                                    </Button>
-                                                    <Button
-                                                        variant="outlined"
-                                                        startIcon={<Description />}
-                                                        fullWidth
-                                                    >
-                                                        Preparação
-                                                    </Button>
-                                                </Box>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-
-                                    <Box sx={{ mt: 4 }}>
-                                        <Typography variant="h6" gutterBottom>
-                                            Histórico de Consultas
-                                        </Typography>
-                                        <Divider sx={{ mb: 2 }} />
-
-                                        {pastAppointments.map((appointment) => (
-                                            <Card key={appointment.id} variant="outlined" sx={{ mb: 2 }}>
-                                                <CardContent>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                            <Avatar
-                                                                src={appointment.image}
-                                                                alt={appointment.doctor}
-                                                                sx={{ width: 48, height: 48, mr: 2 }}
-                                                            />
-                                                            <Box>
-                                                                <Typography variant="subtitle1">
-                                                                    {appointment.doctor}
+                                                return (
+                                                    <Grid item xs={12} sm={6} md={4} key={appointment.id}>
+                                                        <Card variant="outlined" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                                            <CardContent sx={{ flexGrow: 1 }}>
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                                                    <Chip
+                                                                        label={statusInfo.label}
+                                                                        color={statusInfo.color}
+                                                                        size="small"
+                                                                    />
+                                                                    {isToday && appointment.status === 'scheduled' && (
+                                                                        <Chip
+                                                                            label="Hoje"
+                                                                            color="primary"
+                                                                            size="small"
+                                                                        />
+                                                                    )}
+                                                                </Box>
+                                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                                                                    <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                                                                        {appointment.professional?.avatar ? (
+                                                                            <img src={appointment.professional.avatar} alt={appointment.professional.name} />
+                                                                        ) : (
+                                                                            <Person />
+                                                                        )}
+                                                                    </Avatar>
+                                                                    <Box>
+                                                                        <Typography variant="h6" gutterBottom>
+                                                                            {appointment.professional?.name || 'Profissional de Saúde'}
+                                                                        </Typography>
+                                                                        <Typography variant="body2" color="text.secondary">
+                                                                            {appointment.professional?.specialty || 'Especialidade não informada'}
+                                                                        </Typography>
+                                                                    </Box>
+                                                                </Box>
+                                                                <Divider sx={{ my: 2 }} />
+                                                                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                                    <AccessTime fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+                                                                    {format(appointmentDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                                                                 </Typography>
-                                                                <Typography variant="body2" color="text.secondary">
-                                                                    {appointment.specialty}
+                                                                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                    <AccessTime fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+                                                                    {format(appointmentDate, 'HH:mm', { locale: ptBR })}
                                                                 </Typography>
+                                                            </CardContent>
+                                                            <Divider />
+                                                            <Box sx={{ p: 2 }}>
+                                                                <Button
+                                                                    variant="contained"
+                                                                    color="primary"
+                                                                    fullWidth
+                                                                    startIcon={<Videocam />}
+                                                                    onClick={() => handleJoinCall(appointment)}
+                                                                    disabled={appointment.status !== 'scheduled' || loading}
+                                                                >
+                                                                    {appointment.status === 'scheduled' ? 'Entrar na Teleconsulta' : 'Teleconsulta Finalizada'}
+                                                                </Button>
                                                             </Box>
-                                                        </Box>
-                                                        <Chip
-                                                            size="small"
-                                                            label={appointment.status}
-                                                            color="success"
-                                                        />
-                                                    </Box>
-
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-                                                        <AccessTime fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            {appointment.date} às {appointment.time}
-                                                        </Typography>
-                                                    </Box>
-
-                                                    <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-                                                        <Button
-                                                            variant="outlined"
-                                                            size="small"
-                                                            startIcon={<MedicalServices />}
-                                                        >
-                                                            Ver Resumo
-                                                        </Button>
-                                                        <Button
-                                                            variant="outlined"
-                                                            size="small"
-                                                            startIcon={<History />}
-                                                        >
-                                                            Ver Gravação
-                                                        </Button>
-                                                    </Box>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </Box>
+                                                        </Card>
+                                                    </Grid>
+                                                );
+                                            })}
+                                        </Grid>
+                                    ) : (
+                                        <Paper elevation={2} sx={{ p: 4, textAlign: 'center' }}>
+                                            <Typography variant="h6" color="text.secondary" gutterBottom>
+                                                Você não possui teleconsultas agendadas.
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary" paragraph>
+                                                Para agendar uma teleconsulta, vá para a seção "Consultas" e selecione a opção "Teleconsulta".
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                onClick={() => {
+                                                    // Navegar para a página de agendamento
+                                                    window.location.href = '/patient/appointments';
+                                                }}
+                                            >
+                                                Agendar Teleconsulta
+                                            </Button>
+                                        </Paper>
+                                    )}
                                 </>
                             )}
 
@@ -268,8 +580,8 @@ const PatientTelemedicine = () => {
                                         Siga os passos para agendar uma nova consulta médica online.
                                     </Typography>
 
-                                    <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-                                        {steps.map((label) => (
+                                    <Stepper activeStep={0} sx={{ mb: 4 }}>
+                                        {['Selecionar especialidade', 'Escolher profissional', 'Agendar data/hora', 'Confirmar'].map((label) => (
                                             <Step key={label}>
                                                 <StepLabel>{label}</StepLabel>
                                             </Step>
@@ -277,243 +589,43 @@ const PatientTelemedicine = () => {
                                     </Stepper>
 
                                     <Box>
-                                        {activeStep === 0 && (
-                                            <Box>
-                                                <TextField
-                                                    fullWidth
-                                                    variant="outlined"
-                                                    label="Pesquisar especialidade"
-                                                    placeholder="Ex: Cardiologia, Ortopedia..."
-                                                    value={searchTerm}
-                                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                                    InputProps={{
-                                                        startAdornment: <Search color="action" sx={{ mr: 1 }} />,
-                                                    }}
-                                                    sx={{ mb: 3 }}
-                                                />
+                                        <TextField
+                                            fullWidth
+                                            variant="outlined"
+                                            label="Pesquisar especialidade"
+                                            placeholder="Ex: Cardiologia, Ortopedia..."
+                                            InputProps={{
+                                                startAdornment: <Search color="action" sx={{ mr: 1 }} />,
+                                            }}
+                                            sx={{ mb: 3 }}
+                                        />
 
-                                                <Grid container spacing={2}>
-                                                    {specialties
-                                                        .filter(spec =>
-                                                            spec.name.toLowerCase().includes(searchTerm.toLowerCase())
-                                                        )
-                                                        .map((specialty) => (
-                                                            <Grid item xs={12} sm={6} key={specialty.id}>
-                                                                <Card
-                                                                    variant="outlined"
-                                                                    sx={{
-                                                                        p: 2,
-                                                                        cursor: 'pointer',
-                                                                        '&:hover': {
-                                                                            bgcolor: 'primary.light',
-                                                                            color: 'white'
-                                                                        }
-                                                                    }}
-                                                                    onClick={handleNext}
-                                                                >
-                                                                    <Typography variant="h6">{specialty.name}</Typography>
-                                                                </Card>
-                                                            </Grid>
-                                                        ))}
+                                        <Grid container spacing={2}>
+                                            {[
+                                                { id: 1, name: 'Cardiologia' },
+                                                { id: 2, name: 'Dermatologia' },
+                                                { id: 3, name: 'Ortopedia' },
+                                                { id: 4, name: 'Clínico Geral' },
+                                                { id: 5, name: 'Pediatria' },
+                                                { id: 6, name: 'Psiquiatria' }
+                                            ].map((specialty) => (
+                                                <Grid item xs={12} sm={6} key={specialty.id}>
+                                                    <Card
+                                                        variant="outlined"
+                                                        sx={{
+                                                            p: 2,
+                                                            cursor: 'pointer',
+                                                            '&:hover': {
+                                                                bgcolor: 'primary.light',
+                                                                color: 'white'
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Typography variant="h6">{specialty.name}</Typography>
+                                                    </Card>
                                                 </Grid>
-                                            </Box>
-                                        )}
-
-                                        {activeStep === 1 && (
-                                            <Box>
-                                                <TextField
-                                                    fullWidth
-                                                    variant="outlined"
-                                                    label="Pesquisar médico"
-                                                    placeholder="Digite o nome do médico"
-                                                    InputProps={{
-                                                        startAdornment: <Search color="action" sx={{ mr: 1 }} />,
-                                                    }}
-                                                    sx={{ mb: 3 }}
-                                                />
-
-                                                <List>
-                                                    {[1, 2, 3].map((item) => (
-                                                        <ListItem
-                                                            key={item}
-                                                            alignItems="flex-start"
-                                                            sx={{
-                                                                mb: 2,
-                                                                border: '1px solid #e0e0e0',
-                                                                borderRadius: 1,
-                                                                cursor: 'pointer',
-                                                                '&:hover': {
-                                                                    bgcolor: 'rgba(0, 0, 0, 0.04)'
-                                                                }
-                                                            }}
-                                                            onClick={handleNext}
-                                                        >
-                                                            <ListItemAvatar>
-                                                                <Avatar src={`https://xsgames.co/randomusers/assets/avatars/${item % 2 === 0 ? 'male' : 'female'}/${item + 3}.jpg`} />
-                                                            </ListItemAvatar>
-                                                            <ListItemText
-                                                                primary={`${item % 2 === 0 ? 'Dr.' : 'Dra.'} ${['Ricardo Mendes', 'Ana Souza', 'Paulo Oliveira'][item - 1]}`}
-                                                                secondary={
-                                                                    <>
-                                                                        <Typography variant="body2" component="span">
-                                                                            {['Cardiologia', 'Cardiologia', 'Cardiologia'][item - 1]}
-                                                                        </Typography>
-                                                                        <br />
-                                                                        <Typography variant="body2" component="span" color="text.secondary">
-                                                                            Próxima disponibilidade: {['Hoje, 16:00', 'Amanhã, 10:30', 'Sexta, 14:15'][item - 1]}
-                                                                        </Typography>
-                                                                    </>
-                                                                }
-                                                            />
-                                                            <Chip
-                                                                label={`${['4.8', '4.9', '4.7'][item - 1]} ★`}
-                                                                size="small"
-                                                                color="primary"
-                                                                variant="outlined"
-                                                                sx={{ ml: 2, alignSelf: 'center' }}
-                                                            />
-                                                        </ListItem>
-                                                    ))}
-                                                </List>
-                                            </Box>
-                                        )}
-
-                                        {activeStep === 2 && (
-                                            <Box>
-                                                <Typography variant="subtitle1" gutterBottom>
-                                                    Dra. Ana Souza - Cardiologia
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                                                    Selecione uma data e horário disponível
-                                                </Typography>
-
-                                                <Grid container spacing={2}>
-                                                    <Grid item xs={12} sm={6}>
-                                                        <Typography variant="subtitle2" gutterBottom>
-                                                            Hoje - 22/04/2025
-                                                        </Typography>
-                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                                            {['14:00', '15:30', '16:45', '18:00'].map((time) => (
-                                                                <Chip
-                                                                    key={time}
-                                                                    label={time}
-                                                                    onClick={handleNext}
-                                                                    sx={{
-                                                                        cursor: 'pointer',
-                                                                        '&:hover': {
-                                                                            bgcolor: 'primary.main',
-                                                                            color: 'white'
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            ))}
-                                                        </Box>
-                                                    </Grid>
-                                                    <Grid item xs={12} sm={6}>
-                                                        <Typography variant="subtitle2" gutterBottom>
-                                                            Amanhã - 23/04/2025
-                                                        </Typography>
-                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                                            {['09:30', '10:45', '11:15', '14:30', '16:00'].map((time) => (
-                                                                <Chip
-                                                                    key={time}
-                                                                    label={time}
-                                                                    onClick={handleNext}
-                                                                    sx={{
-                                                                        cursor: 'pointer',
-                                                                        '&:hover': {
-                                                                            bgcolor: 'primary.main',
-                                                                            color: 'white'
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            ))}
-                                                        </Box>
-                                                    </Grid>
-                                                </Grid>
-                                            </Box>
-                                        )}
-
-                                        {activeStep === 3 && (
-                                            <Box>
-                                                <Typography variant="h6" gutterBottom>
-                                                    Confirmar agendamento
-                                                </Typography>
-
-                                                <Card variant="outlined" sx={{ mb: 3 }}>
-                                                    <CardContent>
-                                                        <Grid container spacing={2}>
-                                                            <Grid item xs={12} sm={6}>
-                                                                <Typography variant="body2" color="text.secondary">
-                                                                    Médico
-                                                                </Typography>
-                                                                <Typography variant="body1" sx={{ mb: 2 }}>
-                                                                    Dra. Ana Souza
-                                                                </Typography>
-
-                                                                <Typography variant="body2" color="text.secondary">
-                                                                    Especialidade
-                                                                </Typography>
-                                                                <Typography variant="body1" sx={{ mb: 2 }}>
-                                                                    Cardiologia
-                                                                </Typography>
-                                                            </Grid>
-                                                            <Grid item xs={12} sm={6}>
-                                                                <Typography variant="body2" color="text.secondary">
-                                                                    Data
-                                                                </Typography>
-                                                                <Typography variant="body1" sx={{ mb: 2 }}>
-                                                                    22/04/2025
-                                                                </Typography>
-
-                                                                <Typography variant="body2" color="text.secondary">
-                                                                    Horário
-                                                                </Typography>
-                                                                <Typography variant="body1">
-                                                                    14:00
-                                                                </Typography>
-                                                            </Grid>
-                                                        </Grid>
-
-                                                        <Divider sx={{ my: 2 }} />
-
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            Valor
-                                                        </Typography>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                            <Typography variant="body1">
-                                                                Teleconsulta
-                                                            </Typography>
-                                                            <Typography variant="body1" fontWeight="bold">
-                                                                R$ 180,00
-                                                            </Typography>
-                                                        </Box>
-                                                    </CardContent>
-                                                </Card>
-
-                                                <Button
-                                                    variant="contained"
-                                                    color="primary"
-                                                    size="large"
-                                                    fullWidth
-                                                    onClick={handleReset}
-                                                >
-                                                    Confirmar e Pagar
-                                                </Button>
-                                            </Box>
-                                        )}
-
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-                                            <Button
-                                                disabled={activeStep === 0}
-                                                onClick={handleBack}
-                                            >
-                                                Voltar
-                                            </Button>
-                                            {activeStep < 3 && <Button onClick={handleNext} disabled={activeStep === 3}>
-                                                {activeStep === steps.length - 1 ? 'Finalizar' : 'Próximo'}
-                                            </Button>}
-                                        </Box>
+                                            ))}
+                                        </Grid>
                                     </Box>
                                 </Box>
                             )}
@@ -590,7 +702,11 @@ const PatientTelemedicine = () => {
                         </Typography>
                         <Divider sx={{ mb: 2 }} />
 
-                        {upcomingAppointments.length > 0 ? (
+                        {loading ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : upcomingAppointments.length > 0 ? (
                             <Box>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                     <Avatar
@@ -609,7 +725,7 @@ const PatientTelemedicine = () => {
                                 </Box>
 
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                    <Event fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+                                    <AccessTime fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
                                     <Typography variant="body2">
                                         {upcomingAppointments[0].date}
                                     </Typography>
@@ -621,7 +737,7 @@ const PatientTelemedicine = () => {
 
                                 <Button
                                     variant="contained"
-                                    startIcon={<VideoCall />}
+                                    startIcon={<Videocam />}
                                     fullWidth
                                     sx={{ mb: 1 }}
                                 >
@@ -694,6 +810,74 @@ const PatientTelemedicine = () => {
                     </Paper>
                 </Grid>
             </Grid>
+
+            {/* Modal de feedback da consulta */}
+            <Dialog
+                open={showFeedbackDialog}
+                onClose={() => setShowFeedbackDialog(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    Avalie sua Teleconsulta
+                </DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, my: 1 }}>
+                        <Typography variant="body1">
+                            Obrigado por participar da teleconsulta. Sua avaliação é muito importante para melhorarmos nosso serviço.
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Typography variant="subtitle1" gutterBottom>
+                                Como você avalia o atendimento?
+                            </Typography>
+                            <Rating
+                                name="consultation-rating"
+                                value={feedback.rating}
+                                onChange={(event, newValue) => {
+                                    setFeedback(prev => ({ ...prev, rating: newValue || 0 }));
+                                }}
+                                size="large"
+                                sx={{ fontSize: '2.5rem', mb: 2 }}
+                            />
+                        </Box>
+
+                        <TextField
+                            label="Comentários e sugestões (opcional)"
+                            multiline
+                            rows={4}
+                            fullWidth
+                            value={feedback.comment}
+                            onChange={(e) => setFeedback(prev => ({ ...prev, comment: e.target.value }))}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowFeedbackDialog(false)} color="inherit">
+                        Pular
+                    </Button>
+                    <Button onClick={handleSubmitFeedback} variant="contained" color="primary">
+                        Enviar Avaliação
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar para mensagens */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={5000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={handleCloseSnackbar}
+                    severity={snackbar.severity}
+                    sx={{ width: '100%' }}
+                    variant="filled"
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

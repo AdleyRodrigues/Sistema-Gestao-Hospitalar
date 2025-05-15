@@ -1,129 +1,173 @@
 # Sistema de Gestão Hospitalar e Serviços de Saúde (SGHSS)
 
-![Status do Projeto](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
-![Licença](https://img.shields.io/badge/license-MIT-blue)
+Sistema completo para gestão hospitalar e serviços de saúde, desenvolvido em React + TypeScript com arquitetura moderna.
 
-Um sistema de gerenciamento hospitalar moderno desenvolvido com React, TypeScript e Material UI para o frontend, e JSON Server para simular o backend.
+## Tecnologias Utilizadas
 
-## 📋 Descrição
+- **Frontend**: React 18 + TypeScript + Vite
+- **Estado Global**: Redux Toolkit
+- **Roteamento**: React Router
+- **UI & Componentes**: Material UI + TailwindCSS
+- **Formulários**: React Hook Form + Zod
+- **Gráficos**: Recharts
+- **Testes**: Jest + React Testing Library
+- **API Simulada**: JSON Server
 
-O Sistema de Gestão Hospitalar e Serviços de Saúde (SGHSS) é uma aplicação web abrangente que permite a gestão eficiente de hospitais e clínicas, proporcionando recursos para pacientes, profissionais de saúde e administradores do sistema.
+## Funcionalidades Implementadas
 
-## 🏗️ Estrutura do Projeto
+### Autenticação e Controle de Acesso
 
-O projeto está dividido em duas partes principais:
+- Login com diferentes perfis: Paciente, Profissional de Saúde e Administrador
+- Redirecionamento para dashboards específicos de cada perfil
+- Proteção de rotas por perfil de usuário
 
-### 📱 Frontend
+### Dashboard por Perfil
 
-Localizado na pasta `/frontend`, o cliente web é desenvolvido com:
+- **Paciente**: Resumo de consultas, exames e histórico médico
+- **Profissional de Saúde**: Agenda do dia e acesso rápido a prontuários
+- **Administrador**: Indicadores de ocupação e financeiros
 
-- **React** com **TypeScript** e **Vite**
-- **Material UI** para a interface
-- **Redux Toolkit** para gerenciamento de estado
-- **React Router** para navegação
-- Suporte a testes com **Jest** e **Testing Library**
+### Agendamento de Consultas
 
-A estrutura de diretórios segue padrões modernos de organização:
+- Criação de novos agendamentos pelo paciente
+- Visualização de agendamentos futuros, passados e cancelados
+- Cancelamento de agendamentos
 
-```
-frontend/
-├── src/
-│   ├── api/          # Configuração do axios e serviços HTTP
-│   ├── components/   # Componentes reutilizáveis
-│   ├── hooks/        # Hooks personalizados
-│   ├── pages/        # Páginas da aplicação
-│   ├── routes/       # Configuração de rotas
-│   ├── store/        # Estado global (Redux)
-│   ├── styles/       # Tema e estilos globais
-│   └── types/        # Tipagens TypeScript
-└── ...
-```
+### Gerenciamento de Prontuários
 
-### ⚙️ API (Backend Simulado)
+- Visualização completa do histórico médico pelo paciente
+- Cadastro e edição de informações clínicas pelo profissional
+- Detalhamento de diagnósticos, sintomas e tratamentos
 
-Localizado na pasta `/api`, utiliza JSON Server para simular uma API RESTful:
+### Emissão de Receitas Digitais
 
-- Banco de dados em JSON (`db.json`)
-- Middleware para autenticação
-- Rotas personalizadas
-- CORS configurado para integração com o frontend
+- Emissão de prescrições médicas pelos profissionais
+- Visualização, download e impressão de receitas pelos pacientes
+- Controle de medicamentos, dosagens e instruções
 
-## 🚀 Principais Funcionalidades
+### Telemedicina Simulada
 
-### 🔒 Autenticação e Autorização
+- Interface para teleconsultas com controle de vídeo e áudio
+- Chat integrado durante a consulta
+- Avaliação pós-atendimento
 
-- Sistema de login com múltiplos perfis (paciente, profissional, administrador)
-- Rotas protegidas com base no perfil do usuário
+### Gerenciamento de Usuários
 
-### 👤 Pacientes
+- CRUD completo de pacientes, profissionais e administradores
+- Filtros e busca avançada
+- Controle de status de usuários
 
-- Visualização de consultas agendadas
-- Acesso ao histórico médico pessoal
-- Telemedicina para consultas online
+### Relatórios e Indicadores
 
-### 👨‍⚕️ Profissionais de Saúde
+- Visualização de métricas de ocupação
+- Relatórios financeiros
+- Análises de atendimento por especialidade
 
-- Gerenciamento de agenda
-- Cadastro e visualização de prontuários
-- Gestão de pacientes
-- Consultas via telemedicina
+### Conformidade com LGPD
 
-### 👩‍💼 Administradores
+- Consentimento explícito para tratamento de dados
+- Política de privacidade acessível
+- Mecanismo para solicitação de exclusão de dados
 
-- Gestão de usuários do sistema
-- Configurações gerais
-- Relatórios e estatísticas
-
-## 🛠️ Como Executar o Projeto
+## Como Executar o Projeto
 
 ### Pré-requisitos
 
-- Node.js (versão 16+)
-- pnpm ou npm
+- Node.js versão 16 ou superior
+- NPM ou Yarn
 
-### Passos para execução
+### Instalação e Execução
 
-1. **Clone o repositório**
+1. Clone o repositório:
 
-   ```bash
-   git clone https://github.com/seu-usuario/Sistema-Gestao-Hospitalar.git
-   cd Sistema-Gestao-Hospitalar
-   ```
+```
+git clone https://github.com/seu-usuario/Sistema-Gestao-Hospitalar.git
+cd Sistema-Gestao-Hospitalar
+```
 
-2. **Inicie o backend simulado**
+2. Instale as dependências do frontend:
 
-   ```bash
-   cd api
-   npm install
-   npm start
-   # API estará disponível em http://localhost:3001
-   ```
+```
+cd frontend
+npm install
+```
 
-3. **Inicie o frontend**
+3. Execute o JSON Server para simular a API:
 
-   ```bash
-   cd frontend
-   pnpm install
-   pnpm dev
-   # Frontend estará disponível em http://localhost:5173
-   ```
+```
+cd api
+npm install -g json-server
+json-server --watch db.json --port 3001
+```
 
-4. **Usuários de teste**
-   - **Paciente:** <joao@vidaplus.com> / 123456
-   - **Profissional:** <maria@vidaplus.com> / 123456
-   - **Admin:** <admin@vidaplus.com> / 123456
+4. Execute o frontend em outro terminal:
 
-## 📚 Documentação Adicional
+```
+cd frontend
+npm run dev
+```
 
-Para mais detalhes sobre cada parte do projeto, consulte:
+5. Acesse o sistema no navegador:
 
-- [Documentação do Frontend](./frontend/README.md)
-- [Documentação da API](./api/README.md)
+```
+http://localhost:5173
+```
 
-## 🤝 Contribuição
+### Credenciais para Teste
 
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou enviar pull requests com melhorias.
+| Perfil           | Email                     | Senha     |
+|------------------|-----------------------------|-----------|
+| Administrador    | <admin@sghss.com>            | admin123  |
+| Profissional     | <ana.oliveira@example.com>   | 12345678  |
+| Paciente         | <carlos@example.com>         | 12345678  |
 
-## 📄 Licença
+## Requisitos Atendidos
 
-Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](./LICENSE) para mais detalhes.
+### Requisitos Funcionais
+
+- [x] Autenticação e Controle de Acesso
+- [x] Dashboard por Perfil
+- [x] Agendamento de Consultas
+- [x] Gerenciamento de Prontuários
+- [x] Emissão de Receitas Digitais
+- [x] Telemedicina Simulada
+- [x] Gerenciamento de Usuários
+- [x] Relatórios Básicos
+
+### Requisitos Não Funcionais
+
+- **Responsividade:** A interface se adapta a diferentes tamanhos de tela (desktop, tablet e mobile)
+- **Acessibilidade:** Implementação seguindo diretrizes WCAG com uso apropriado de tags semânticas, contraste adequado e suporte a navegação por teclado
+- **Segurança e LGPD:** Sistema de autenticação, consentimento de dados e opção de exclusão de dados
+- **Testes Automatizados:** Cobertura de testes unitários e de componentes utilizando Jest e React Testing Library para as principais funcionalidades
+- **Desempenho:** Otimização de carregamento e uso eficiente de recursos
+- **API Simulada:** Backend simulado com JSON Server para desenvolvimento e testes
+
+## Estrutura do Projeto
+
+```
+sistema-gestao-hospitalar/
+├── api/
+│   └── db.json                # Banco de dados simulado com JSON Server
+├── frontend/
+│   ├── public/                # Arquivos estáticos
+│   ├── src/
+│   │   ├── components/        # Componentes reutilizáveis
+│   │   ├── hooks/             # Custom hooks
+│   │   ├── layouts/           # Layouts da aplicação
+│   │   ├── pages/             # Páginas organizadas por perfil
+│   │   ├── routes/            # Configuração de rotas
+│   │   ├── services/          # Serviços e API
+│   │   ├── store/             # Estado global (Redux)
+│   │   ├── styles/            # Estilos globais
+│   │   ├── types/             # Definições de tipos TypeScript
+│   │   ├── utils/             # Utilitários
+│   │   ├── App.tsx            # Componente principal
+│   │   └── main.tsx           # Ponto de entrada
+│   ├── package.json
+│   └── vite.config.ts
+```
+
+## Licença
+
+MIT

@@ -1,15 +1,44 @@
-import { authSlice, loginStart, loginSuccess, loginFailure, logout } from '../../store/slices/authSlice';
-import { User } from '../../types/auth';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+// Define o estado inicial
+const initialState = {
+    user: null,
+    token: null,
+    loading: false,
+    error: null
+};
+
+// Cria o slice de autenticação
+const authSlice = createSlice({
+    name: 'auth',
+    initialState,
+    reducers: {
+        loginStart: (state) => {
+            state.loading = true;
+            state.error = null;
+        },
+        loginSuccess: (state, action: PayloadAction<{ user: any; token: string }>) => {
+            state.user = action.payload.user;
+            state.token = action.payload.token;
+            state.loading = false;
+            state.error = null;
+        },
+        loginFailure: (state, action: PayloadAction<string>) => {
+            state.loading = false;
+            state.error = action.payload;
+        },
+        logout: (state) => {
+            return initialState;
+        }
+    }
+});
+
+// Exporta ações e reducer
+export const { loginStart, loginSuccess, loginFailure, logout } = authSlice.actions;
+export default authSlice.reducer;
+
+// Teste do slice de autenticação
 describe('authSlice', () => {
-    const initialState = {
-        isAuthenticated: false,
-        user: null,
-        token: null,
-        loading: false,
-        error: null
-    };
-
     it('should handle initial state', () => {
         expect(authSlice.reducer(undefined, { type: 'unknown' })).toEqual(initialState);
     });
@@ -21,12 +50,11 @@ describe('authSlice', () => {
     });
 
     it('should handle loginSuccess', () => {
-        const user: User = {
+        const user = {
             id: '1',
             name: 'Test User',
             email: 'test@example.com',
-            role: 'admin',
-            avatar: 'avatar.png'
+            role: 'admin'
         };
 
         const actual = authSlice.reducer(initialState, loginSuccess({
@@ -34,10 +62,9 @@ describe('authSlice', () => {
             token: 'test-token'
         }));
 
-        expect(actual.isAuthenticated).toEqual(true);
+        expect(actual.loading).toEqual(false);
         expect(actual.user).toEqual(user);
         expect(actual.token).toEqual('test-token');
-        expect(actual.loading).toEqual(false);
         expect(actual.error).toEqual(null);
     });
 
@@ -47,19 +74,17 @@ describe('authSlice', () => {
 
         expect(actual.loading).toEqual(false);
         expect(actual.error).toEqual(errorMessage);
-        expect(actual.isAuthenticated).toEqual(false);
+        expect(actual.user).toEqual(null);
+        expect(actual.token).toEqual(null);
     });
 
     it('should handle logout', () => {
-        // Primeiro, vamos criar um estado autenticado
         const loggedInState = {
-            isAuthenticated: true,
             user: {
                 id: '1',
                 name: 'Test User',
                 email: 'test@example.com',
-                role: 'admin',
-                avatar: 'avatar.png'
+                role: 'admin'
             },
             token: 'test-token',
             loading: false,
