@@ -1,60 +1,109 @@
 import { api } from '../../services/api';
+import axios from 'axios';
 
-// Mock do axios/api
-jest.mock('../../services/api', () => ({
-    api: {
-        get: jest.fn(),
-        post: jest.fn(),
-        put: jest.fn(),
-        delete: jest.fn()
-    }
-}));
+// Mock do axios
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('API Service', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('deve chamar o método GET corretamente', async () => {
-        const mockData = { id: 1, name: 'Test User' };
-        (api.get as jest.Mock).mockResolvedValueOnce({ data: mockData });
+    it('deve retornar dados de pacientes corretamente', async () => {
+        // Mock da resposta do servidor
+        const mockPatients = [
+            {
+                id: 'user2',
+                name: 'Carlos Ferreira',
+                email: 'carlos@example.com',
+                role: 'patient'
+            },
+            {
+                id: 'user4',
+                name: 'Maria Silva',
+                email: 'maria@example.com',
+                role: 'patient'
+            }
+        ];
 
-        const result = await api.get('/users/1');
+        // Configurar o mock do axios para responder com os dados mockados
+        mockedAxios.get.mockResolvedValueOnce({ data: mockPatients });
 
-        expect(api.get).toHaveBeenCalledWith('/users/1');
-        expect(result.data).toEqual(mockData);
+        // Chamar a API
+        const result = await api.get('/patients');
+
+        // Verificar se axios.get foi chamado com o endpoint correto
+        expect(mockedAxios.get).toHaveBeenCalledWith('/patients');
+
+        // Verificar se retornou os dados esperados
+        expect(result.data).toEqual(mockPatients);
+        expect(result.data).toHaveLength(2);
+        expect(result.data[0].name).toBe('Carlos Ferreira');
     });
 
-    it('deve chamar o método POST corretamente', async () => {
-        const requestData = { name: 'New User', email: 'user@example.com' };
-        const mockResponse = { id: 1, ...requestData };
+    it('deve fazer uma chamada POST corretamente', async () => {
+        // Mock da resposta do servidor
+        const mockResponse = { success: true, id: 'app123' };
 
-        (api.post as jest.Mock).mockResolvedValueOnce({ data: mockResponse });
+        // Mock da requisição
+        const appointmentData = {
+            patientId: 'user2',
+            professionalId: 'user3',
+            date: '2025-05-15T10:30:00.000Z',
+            status: 'scheduled',
+            type: 'consultation',
+            notes: 'Nova consulta'
+        };
 
-        const result = await api.post('/users', requestData);
+        // Configurar o mock do axios para responder com os dados mockados
+        mockedAxios.post.mockResolvedValueOnce({ data: mockResponse });
 
-        expect(api.post).toHaveBeenCalledWith('/users', requestData);
+        // Chamar a API
+        const result = await api.post('/appointments', appointmentData);
+
+        // Verificar se axios.post foi chamado com os argumentos corretos
+        expect(mockedAxios.post).toHaveBeenCalledWith('/appointments', appointmentData);
+
+        // Verificar se retornou a resposta esperada
         expect(result.data).toEqual(mockResponse);
+        expect(result.data.success).toBe(true);
     });
 
-    it('deve chamar o método PUT corretamente', async () => {
-        const requestData = { name: 'Updated User' };
-        const mockResponse = { id: 1, name: 'Updated User', email: 'user@example.com' };
+    it('deve fazer uma chamada PUT corretamente', async () => {
+        // Mock da resposta do servidor
+        const mockResponse = { success: true };
 
-        (api.put as jest.Mock).mockResolvedValueOnce({ data: mockResponse });
+        // Mock da requisição
+        const updatedData = {
+            id: 'app1',
+            status: 'completed',
+            notes: 'Consulta realizada com sucesso'
+        };
 
-        const result = await api.put('/users/1', requestData);
+        // Configurar o mock do axios para responder com os dados mockados
+        mockedAxios.put.mockResolvedValueOnce({ data: mockResponse });
 
-        expect(api.put).toHaveBeenCalledWith('/users/1', requestData);
+        // Chamar a API
+        const result = await api.put(`/appointments/${updatedData.id}`, updatedData);
+
+        // Verificar se axios.put foi chamado com os argumentos corretos
+        expect(mockedAxios.put).toHaveBeenCalledWith(`/appointments/${updatedData.id}`, updatedData);
+
+        // Verificar se retornou a resposta esperada
         expect(result.data).toEqual(mockResponse);
+        expect(result.data.success).toBe(true);
     });
 
-    it('deve chamar o método DELETE corretamente', async () => {
-        (api.delete as jest.Mock).mockResolvedValueOnce({ data: { success: true } });
+    it('deve lidar com erros de API corretamente', async () => {
+        // Configurar o mock do axios para rejeitar com um erro
+        const errorMessage = 'Erro de rede';
+        mockedAxios.get.mockRejectedValueOnce(new Error(errorMessage));
 
-        const result = await api.delete('/users/1');
+        // Chamar a API e esperar que lance um erro
+        await expect(api.get('/invalid-endpoint')).rejects.toThrow(errorMessage);
 
-        expect(api.delete).toHaveBeenCalledWith('/users/1');
-        expect(result.data).toEqual({ success: true });
+        // Verificar se axios.get foi chamado com o endpoint correto
+        expect(mockedAxios.get).toHaveBeenCalledWith('/invalid-endpoint');
     });
 }); 

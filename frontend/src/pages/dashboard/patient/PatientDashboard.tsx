@@ -1,10 +1,12 @@
 import { CalendarMonth, History, MedicalServices, VideoCall } from '@mui/icons-material';
-import { Box, Button, Card, CardContent, Divider, Grid, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid, Paper, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../services/api';
 import ProfileNavHelper from '../../../components/ProfileNavHelper';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 // Tipos de dados
 interface Appointment {
@@ -13,6 +15,10 @@ interface Appointment {
     specialty: string;
     date: string;
     time: string;
+    status: string;
+    notes?: string;
+    professionalId: number;
+    originalDate: string; // Guarda a data em formato ISO para manipulação
 }
 
 interface Exam {
@@ -32,6 +38,8 @@ interface ApiAppointment {
     id: number;
     professionalId: number;
     date: string;
+    status: string;
+    notes?: string;
 }
 
 interface ApiProfessional {
@@ -59,6 +67,12 @@ const PatientDashboard = () => {
         { name: 'Mai', consultations: 0 },
         { name: 'Jun', consultations: 1 },
     ]);
+
+    // Estados para diálogos
+    const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+    const [openRescheduleDialog, setOpenRescheduleDialog] = useState(false);
+    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+    const [newAppointmentDate, setNewAppointmentDate] = useState("");
 
     // Buscar dados da API
     useEffect(() => {
@@ -88,7 +102,11 @@ const PatientDashboard = () => {
                                 doctor: professional.name || 'Profissional não encontrado',
                                 specialty: professional.specialty || 'Especialidade não definida',
                                 date: appointmentDate.toLocaleDateString('pt-BR'),
-                                time: appointmentDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                                time: appointmentDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                                status: app.status,
+                                notes: app.notes,
+                                professionalId: app.professionalId,
+                                originalDate: app.date // Guardar data original
                             };
                         });
 
@@ -126,6 +144,75 @@ const PatientDashboard = () => {
         const date = new Date();
         return date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     }, []);
+
+    // Manipuladores para diálogos
+    const handleOpenDetails = (appointment: Appointment) => {
+        setSelectedAppointment(appointment);
+        setOpenDetailsDialog(true);
+    };
+
+    const handleCloseDetails = () => {
+        setOpenDetailsDialog(false);
+    };
+
+    const handleOpenReschedule = (appointment: Appointment) => {
+        setSelectedAppointment(appointment);
+        // Definir data mínima como amanhã
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+        // Inicializar com a data atual da consulta
+        const currentDate = parseISO(appointment.originalDate);
+        const formattedDate = format(currentDate, "yyyy-MM-dd'T'HH:mm");
+
+        setNewAppointmentDate(formattedDate);
+        setOpenRescheduleDialog(true);
+    };
+
+    const handleCloseReschedule = () => {
+        setOpenRescheduleDialog(false);
+    };
+
+    const handleReschedule = async () => {
+        if (!selectedAppointment || !newAppointmentDate) return;
+
+        try {
+            const updatedAppointment = {
+                ...selectedAppointment,
+                date: new Date(newAppointmentDate).toISOString()
+            };
+
+            await api.put(`/appointments/${selectedAppointment.id}`, {
+                id: selectedAppointment.id,
+                patientId: user?.id,
+                professionalId: selectedAppointment.professionalId,
+                date: new Date(newAppointmentDate).toISOString(),
+                status: "scheduled",
+                notes: selectedAppointment.notes || ""
+            });
+
+            // Atualizar a lista de consultas
+            setAppointments(prevAppointments =>
+                prevAppointments.map(app =>
+                    app.id === selectedAppointment.id
+                        ? {
+                            ...app,
+                            date: format(new Date(newAppointmentDate), 'dd/MM/yyyy'),
+                            time: format(new Date(newAppointmentDate), 'HH:mm'),
+                            originalDate: new Date(newAppointmentDate).toISOString()
+                        }
+                        : app
+                )
+            );
+
+            handleCloseReschedule();
+            alert('Consulta reagendada com sucesso!');
+        } catch (error) {
+            console.error('Erro ao reagendar consulta:', error);
+            alert('Ocorreu um erro ao reagendar a consulta. Tente novamente.');
+        }
+    };
 
     return (
         <Box>
@@ -255,20 +342,21 @@ const PatientDashboard = () => {
                                             </Typography>
                                         </Box>
                                         <Box sx={{ mt: 1 }}>
-                                            <Tooltip title="Funcionalidade em desenvolvimento">
-                                                <span>
-                                                    <Button size="small" variant="contained" sx={{ mr: 1 }} disabled>
-                                                        Detalhes
-                                                    </Button>
-                                                </span>
-                                            </Tooltip>
-                                            <Tooltip title="Funcionalidade em desenvolvimento">
-                                                <span>
-                                                    <Button size="small" variant="outlined" disabled>
-                                                        Reagendar
-                                                    </Button>
-                                                </span>
-                                            </Tooltip>
+                                            <Button
+                                                size="small"
+                                                variant="contained"
+                                                sx={{ mr: 1 }}
+                                                onClick={() => handleOpenDetails(appointment)}
+                                            >
+                                                Detalhes
+                                            </Button>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                onClick={() => handleOpenReschedule(appointment)}
+                                            >
+                                                Reagendar
+                                            </Button>
                                         </Box>
                                     </Paper>
                                 ))}
@@ -330,6 +418,109 @@ const PatientDashboard = () => {
                     </Paper>
                 </Grid>
             </Grid>
+
+            {/* Diálogo de Detalhes da Consulta */}
+            <Dialog open={openDetailsDialog} onClose={handleCloseDetails} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    Detalhes da Consulta
+                </DialogTitle>
+                <DialogContent dividers>
+                    {selectedAppointment && (
+                        <Box>
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} sm={6}>
+                                    <Typography variant="body2" color="text.secondary">Médico</Typography>
+                                    <Typography variant="body1" gutterBottom>{selectedAppointment.doctor}</Typography>
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <Typography variant="body2" color="text.secondary">Especialidade</Typography>
+                                    <Typography variant="body1" gutterBottom>{selectedAppointment.specialty}</Typography>
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <Typography variant="body2" color="text.secondary">Data</Typography>
+                                    <Typography variant="body1" gutterBottom>{selectedAppointment.date}</Typography>
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <Typography variant="body2" color="text.secondary">Hora</Typography>
+                                    <Typography variant="body1" gutterBottom>{selectedAppointment.time}</Typography>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Typography variant="body2" color="text.secondary">Observações</Typography>
+                                    <Paper variant="outlined" sx={{ p: 2, mt: 1, bgcolor: 'background.default' }}>
+                                        <Typography variant="body2">
+                                            {selectedAppointment.notes || "Sem observações registradas para esta consulta."}
+                                        </Typography>
+                                    </Paper>
+                                </Grid>
+                            </Grid>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDetails} color="primary">
+                        Fechar
+                    </Button>
+                    <Button
+                        color="primary"
+                        variant="contained"
+                        onClick={() => {
+                            handleCloseDetails();
+                            if (selectedAppointment) handleOpenReschedule(selectedAppointment);
+                        }}
+                    >
+                        Reagendar
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Diálogo de Reagendamento */}
+            <Dialog open={openRescheduleDialog} onClose={handleCloseReschedule} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    Reagendar Consulta
+                </DialogTitle>
+                <DialogContent dividers>
+                    {selectedAppointment && (
+                        <Box>
+                            <Typography variant="subtitle1" gutterBottom>
+                                Consulta com {selectedAppointment.doctor}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Atualmente agendada para {selectedAppointment.date} às {selectedAppointment.time}
+                            </Typography>
+
+                            <Box sx={{ mt: 3 }}>
+                                <Typography variant="body1" gutterBottom>
+                                    Escolha uma nova data e horário:
+                                </Typography>
+                                <TextField
+                                    label="Nova data e horário"
+                                    type="datetime-local"
+                                    fullWidth
+                                    value={newAppointmentDate}
+                                    onChange={(e) => setNewAppointmentDate(e.target.value)}
+                                    InputLabelProps={{
+                                        shrink: true,
+                                    }}
+                                    sx={{ mt: 1 }}
+                                />
+                            </Box>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseReschedule} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handleReschedule}
+                        color="primary"
+                        variant="contained"
+                        disabled={!newAppointmentDate}
+                    >
+                        Confirmar Reagendamento
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {/* Adicionar o helper de navegação para depuração */}
             <ProfileNavHelper />

@@ -39,6 +39,9 @@ const AdminProfile = lazy(() => import('../pages/admin/Profile'));
 const ProfessionalProfile = lazy(() => import('../pages/professional/Profile'));
 const PatientProfile = lazy(() => import('../pages/patient/Profile'));
 
+// Páginas de Admin
+const UserManagement = lazy(() => import('../pages/admin/UserManagement'));
+
 // Layout protegido baseado no perfil do usuário
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
     const { isAuthenticated, user } = useAuth();
@@ -246,6 +249,16 @@ export default function Router() {
                         <ProtectedRoute allowedRoles={['admin']}>
                             <Suspense fallback={null}>
                                 <AdminProfile />
+                            </Suspense>
+                        </ProtectedRoute>
+                    ),
+                },
+                {
+                    path: 'users',
+                    element: (
+                        <ProtectedRoute allowedRoles={['admin']}>
+                            <Suspense fallback={null}>
+                                <UserManagement />
                             </Suspense>
                         </ProtectedRoute>
                     ),

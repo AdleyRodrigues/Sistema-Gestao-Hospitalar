@@ -1,461 +1,223 @@
 {
-    "users": [
-        {
-            "id": "user1",
-            "name": "Administrador Sistema",
-            "email": "admin@sghss.com",
-            "password": "admin123",
-            "role": "admin",
-            "status": "active",
-            "createdAt": "2023-10-15T10:30:00.000Z"
-        },
-        {
-            "id": "user2",
-            "name": "Carlos Ferreira",
-            "email": "carlos@example.com",
-            "password": "12345678",
-            "phone": "(11) 98765-4321",
-            "role": "patient",
-            "status": "active",
-            "createdAt": "2023-11-10T14:20:00.000Z"
-        },
-        {
-            "id": "user3",
-            "name": "Dra. Ana Oliveira",
-            "email": "ana.oliveira@example.com",
-            "password": "12345678",
-            "phone": "(11) 97654-3210",
-            "role": "professional",
-            "status": "active",
-            "createdAt": "2023-09-05T09:15:00.000Z"
-        },
-        {
-            "id": "user4",
-            "name": "Maria Silva",
-            "email": "maria@example.com",
-            "password": "12345678",
-            "phone": "(11) 91234-5678",
-            "role": "patient",
-            "status": "active",
-            "createdAt": "2023-12-01T16:45:00.000Z"
-        },
-        {
-            "id": "user5",
-            "name": "Dr. Ricardo Santos",
-            "email": "ricardo.santos@example.com",
-            "password": "12345678",
-            "phone": "(11) 95678-1234",
-            "role": "professional",
-            "status": "active",
-            "createdAt": "2023-10-20T11:30:00.000Z"
-        }
-    ],
-    "patients": [
-        {
-            "id": "user2",
-            "name": "Carlos Ferreira",
-            "email": "carlos@example.com",
-            "password": "12345678",
-            "phone": "(11) 98765-4321",
-            "role": "patient",
-            "status": "active",
-            "createdAt": "2023-11-10T14:20:00.000Z",
-            "birthDate": "1985-04-15",
-            "gender": "male",
-            "bloodType": "O+",
-            "address": {
-                "street": "Rua das Flores",
-                "number": "123",
-                "neighborhood": "Jardim América",
-                "city": "São Paulo",
-                "state": "SP",
-                "zipCode": "01234-567"
-            }
-        },
-        {
-            "id": "user4",
-            "name": "Maria Silva",
-            "email": "maria@example.com",
-            "password": "12345678",
-            "phone": "(11) 91234-5678",
-            "role": "patient",
-            "status": "active",
-            "createdAt": "2023-12-01T16:45:00.000Z",
-            "birthDate": "1990-07-22",
-            "gender": "female",
-            "bloodType": "A+",
-            "address": {
-                "street": "Avenida Paulista",
-                "number": "1500",
-                "neighborhood": "Bela Vista",
-                "city": "São Paulo",
-                "state": "SP",
-                "zipCode": "01310-200"
-            }
-        },
-        {
-            "id": "user6",
-            "name": "João Oliveira",
-            "email": "joao@example.com",
-            "password": "12345678",
-            "phone": "(11) 94567-8901",
-            "role": "patient",
-            "status": "active",
-            "createdAt": "2023-12-15T10:20:00.000Z",
-            "birthDate": "1978-10-08",
-            "gender": "male",
-            "bloodType": "B-",
-            "address": {
-                "street": "Rua Augusta",
-                "number": "789",
-                "neighborhood": "Consolação",
-                "city": "São Paulo",
-                "state": "SP",
-                "zipCode": "01305-000"
-            }
-        }
-    ],
-    "professionals": [
-        {
-            "id": "user3",
-            "name": "Dra. Ana Oliveira",
-            "email": "ana.oliveira@example.com",
-            "password": "12345678",
-            "phone": "(11) 97654-3210",
-            "role": "professional",
-            "status": "active",
-            "createdAt": "2023-09-05T09:15:00.000Z",
-            "specialty": "Cardiologia",
-            "crm": "CRM/SP 12345",
-            "availableDays": [
-                1,
-                2,
-                3,
-                4,
-                5
-            ],
-            "startTime": "08:00",
-            "endTime": "17:00",
-            "appointmentDuration": 30
-        },
-        {
-            "id": "user5",
-            "name": "Dr. Ricardo Santos",
-            "email": "ricardo.santos@example.com",
-            "password": "12345678",
-            "phone": "(11) 95678-1234",
-            "role": "professional",
-            "status": "active",
-            "createdAt": "2023-10-20T11:30:00.000Z",
-            "specialty": "Ortopedia",
-            "crm": "CRM/SP 54321",
-            "availableDays": [
-                1,
-                3,
-                5
-            ],
-            "startTime": "09:00",
-            "endTime": "18:00",
-            "appointmentDuration": 45
-        },
-        {
-            "id": "user7",
-            "name": "Dra. Juliana Costa",
-            "email": "juliana@example.com",
-            "password": "12345678",
-            "phone": "(11) 93456-7890",
-            "role": "professional",
-            "status": "active",
-            "createdAt": "2023-11-15T08:30:00.000Z",
-            "specialty": "Dermatologia",
-            "crm": "CRM/SP 67890",
-            "availableDays": [
-                2,
-                4
-            ],
-            "startTime": "10:00",
-            "endTime": "19:00",
-            "appointmentDuration": 30
-        }
-    ],
-    "appointments": [
-        {
-            "id": "app1",
-            "patientId": "user2",
-            "professionalId": "user3",
-            "date": "2025-04-20T14:30:00.000Z",
-            "status": "scheduled",
-            "type": "consultation",
-            "notes": "Consulta de rotina para verificar a pressão arterial."
-        },
-        {
-            "id": "app2",
-            "patientId": "user4",
-            "professionalId": "user5",
-            "date": "2025-04-22T10:15:00.000Z",
-            "status": "scheduled",
-            "type": "consultation",
-            "notes": "Dor no joelho direito há uma semana."
-        },
-        {
-            "id": "app3",
-            "patientId": "user2",
-            "professionalId": "user5",
-            "date": "2025-03-15T15:45:00.000Z",
-            "status": "completed",
-            "type": "consultation",
-            "notes": "Paciente relata dores nas costas."
-        },
-        {
-            "id": "app4",
-            "patientId": "user4",
-            "professionalId": "user3",
-            "date": "2025-05-05T09:30:00.000Z",
-            "status": "scheduled",
-            "type": "return",
-            "notes": "Retorno para avaliação de exames."
-        },
-        {
-            "id": "app5",
-            "patientId": "user6",
-            "professionalId": "user7",
-            "date": "2025-04-25T11:00:00.000Z",
-            "status": "scheduled",
-            "type": "telemedicine",
-            "notes": "Paciente relata manchas na pele."
-        }
-    ],
-    "medical_records": [
-        {
-            "id": "rec1",
-            "patientId": "user2",
-            "professionalId": "user3",
-            "date": "2025-03-10T14:30:00.000Z",
-            "type": "consultation",
-            "title": "Consulta Cardiológica",
-            "description": "Paciente relata cansaço ao realizar atividades físicas leves.",
-            "diagnosis": "Hipertensão Arterial Leve",
-            "symptoms": "Cansaço, dores de cabeça ocasionais, tontura leve.",
-            "treatment": "Prescrição de anti-hipertensivo, recomendação de dieta com baixo teor de sódio.",
-            "notes": "Paciente deve retornar em 30 dias para acompanhamento."
-        },
-        {
-            "id": "rec2",
-            "patientId": "user4",
-            "professionalId": "user5",
-            "date": "2025-02-20T10:15:00.000Z",
-            "type": "consultation",
-            "title": "Consulta Ortopédica",
-            "description": "Paciente relata dor no joelho direito ao caminhar.",
-            "diagnosis": "Artrose leve no joelho direito",
-            "symptoms": "Dor ao subir escadas, rigidez matinal.",
-            "treatment": "Prescrição de anti-inflamatório, recomendação de fisioterapia.",
-            "notes": "Solicitar raio-X para melhor avaliação."
-        },
-        {
-            "id": "rec3",
-            "patientId": "user6",
-            "professionalId": "user7",
-            "date": "2025-03-05T11:30:00.000Z",
-            "type": "consultation",
-            "title": "Consulta Dermatológica",
-            "description": "Paciente apresenta lesões avermelhadas na região do tórax.",
-            "diagnosis": "Dermatite de contato",
-            "symptoms": "Coceira intensa, vermelhidão, descamação da pele.",
-            "treatment": "Prescrição de corticoide tópico, recomendação de evitar alérgenos.",
-            "notes": "Paciente deve retornar em 15 dias para reavaliação."
-        }
-    ],
-    "prescriptions": [
-        {
-            "id": "pres1",
-            "medicalRecordId": "rec1",
-            "patientId": "user2",
-            "professionalId": "user3",
-            "date": "2025-03-10T14:45:00.000Z",
-            "expirationDate": "2025-04-10T14:45:00.000Z",
-            "medications": [
-                {
-                    "id": "med1",
-                    "name": "Losartana Potássica",
-                    "dosage": "50mg",
-                    "frequency": "1 comprimido por dia",
-                    "duration": "30 dias",
-                    "instructions": "Tomar pela manhã, de preferência em jejum"
-                },
-                {
-                    "id": "med2",
-                    "name": "Hidroclorotiazida",
-                    "dosage": "25mg",
-                    "frequency": "1 comprimido por dia",
-                    "duration": "30 dias",
-                    "instructions": "Tomar pela manhã, junto com a Losartana"
-                }
-            ],
-            "instructions": "Manter dieta com baixo teor de sódio. Realizar atividades físicas leves, como caminhadas de 30 minutos, 3 vezes por semana. Retornar em 30 dias para reavaliação.",
-            "status": "active"
-        },
-        {
-            "id": "pres2",
-            "medicalRecordId": "rec2",
-            "patientId": "user4",
-            "professionalId": "user5",
-            "date": "2025-02-20T10:30:00.000Z",
-            "expirationDate": "2025-03-20T10:30:00.000Z",
-            "medications": [
-                {
-                    "id": "med3",
-                    "name": "Ibuprofeno",
-                    "dosage": "600mg",
-                    "frequency": "1 comprimido a cada 8 horas",
-                    "duration": "7 dias",
-                    "instructions": "Tomar após as refeições"
-                },
-                {
-                    "id": "med4",
-                    "name": "Condroitina + Glicosamina",
-                    "dosage": "1500mg + 1200mg",
-                    "frequency": "1 sachê por dia",
-                    "duration": "30 dias",
-                    "instructions": "Diluir em água e tomar após o almoço"
-                }
-            ],
-            "instructions": "Aplicar compressa de gelo no joelho afetado por 15-20 minutos, 3 vezes ao dia. Evitar atividades de alto impacto. Iniciar fisioterapia conforme recomendado.",
-            "status": "active"
-        }
-    ],
-    "financial_data": [
-        {
-            "id": "fin1",
-            "date": "2025-03-10",
-            "type": "income",
-            "category": "consultation",
-            "amount": 250.00,
-            "patientId": "user2",
-            "professionalId": "user3",
-            "appointmentId": "app1",
-            "description": "Consulta Cardiológica - Carlos Ferreira"
-        },
-        {
-            "id": "fin2",
-            "date": "2025-03-11",
-            "type": "income",
-            "category": "consultation",
-            "amount": 300.00,
-            "patientId": "user4",
-            "professionalId": "user5",
-            "appointmentId": "app2",
-            "description": "Consulta Ortopédica - Maria Silva"
-        },
-        {
-            "id": "fin3",
-            "date": "2025-03-12",
-            "type": "income",
-            "category": "telemedicine",
-            "amount": 180.00,
-            "patientId": "user6",
-            "professionalId": "user7",
-            "appointmentId": "app5",
-            "description": "Teleconsulta Dermatológica - João Oliveira"
-        },
-        {
-            "id": "fin4",
-            "date": "2025-03-15",
-            "type": "expense",
-            "category": "salaries",
-            "amount": 5000.00,
-            "description": "Pagamento de Salários - Enfermagem"
-        },
-        {
-            "id": "fin5",
-            "date": "2025-03-15",
-            "type": "expense",
-            "category": "rent",
-            "amount": 3500.00,
-            "description": "Aluguel da Clínica - Março 2025"
-        },
-        {
-            "id": "fin6",
-            "date": "2025-03-20",
-            "type": "expense",
-            "category": "supplies",
-            "amount": 1200.00,
-            "description": "Materiais Médicos e Medicamentos"
-        }
-    ],
-    "consents": [
-        {
-            "id": "con1",
-            "userId": "user2",
-            "type": "data_processing",
-            "status": "accepted",
-            "date": "2023-11-10T14:25:00.000Z",
-            "details": "Consentimento para processamento de dados pessoais e de saúde conforme LGPD"
-        },
-        {
-            "id": "con2",
-            "userId": "user4",
-            "type": "data_processing",
-            "status": "accepted",
-            "date": "2023-12-01T16:50:00.000Z",
-            "details": "Consentimento para processamento de dados pessoais e de saúde conforme LGPD"
-        },
-        {
-            "id": "con3",
-            "userId": "user6",
-            "type": "data_processing",
-            "status": "accepted",
-            "date": "2023-12-15T10:25:00.000Z",
-            "details": "Consentimento para processamento de dados pessoais e de saúde conforme LGPD"
-        }
-    ],
-    "feedback": [
-        {
-            "id": "feed1",
-            "userId": "user2",
-            "appointmentId": "app3",
-            "professionalId": "user5",
-            "rating": 4,
-            "comment": "Bom atendimento, o médico foi atencioso e explicou bem o diagnóstico.",
-            "date": "2025-03-15T16:30:00.000Z"
-        },
-        {
-            "id": "feed2",
-            "userId": "user4",
-            "appointmentId": "app2",
-            "professionalId": "user3",
-            "rating": 5,
-            "comment": "Excelente atendimento! A médica foi muito clara e detalhista nas explicações.",
-            "date": "2025-03-10T11:45:00.000Z"
-        }
-    ],
-    "notifications": [
-        {
-            "id": "not1",
-            "userId": "user2",
-            "title": "Lembrete de Consulta",
-            "message": "Sua consulta com a Dra. Ana Oliveira está agendada para amanhã às 14:30.",
-            "type": "appointment_reminder",
-            "date": "2025-04-19T14:30:00.000Z",
-            "read": false
-        },
-        {
-            "id": "not2",
-            "userId": "user4",
-            "title": "Resultado de Exame Disponível",
-            "message": "Seu resultado de exame já está disponível para visualização.",
-            "type": "exam_result",
-            "date": "2025-04-15T10:00:00.000Z",
-            "read": true
-        },
-        {
-            "id": "not3",
-            "userId": "user3",
-            "title": "Novo Agendamento",
-            "message": "Você tem um novo paciente agendado: Carlos Ferreira - 20/04/2025 às 14:30.",
-            "type": "new_appointment",
-            "date": "2025-04-18T08:00:00.000Z",
-            "read": false
-        }
-    ]
+  "users": [
+    {
+      "id": "user1",
+      "name": "Administrador Sistema",
+      "email": "admin@sghss.com",
+      "password": "admin123",
+      "role": "admin",
+      "status": "active",
+      "createdAt": "2023-10-15T10:30:00.000Z"
+    },
+    {
+      "id": "user2",
+      "name": "Carlos Ferreira",
+      "email": "carlos@example.com",
+      "password": "12345678",
+      "phone": "(11) 98765-4321",
+      "role": "patient",
+      "status": "active",
+      "createdAt": "2023-11-10T14:20:00.000Z"
+    },
+    {
+      "id": "user5",
+      "name": "Dr. Ricardo Santos",
+      "email": "ricardo.santos@example.com",
+      "password": "12345678",
+      "phone": "(11) 95678-1234",
+      "role": "professional",
+      "status": "active",
+      "createdAt": "2023-10-20T11:30:00.000Z"
+    }
+  ],
+  "patients": [
+    {
+      "id": "user2",
+      "name": "Carlos Ferreira",
+      "email": "carlos@example.com",
+      "password": "12345678",
+      "phone": "(11) 98765-4321",
+      "role": "patient",
+      "status": "active",
+      "createdAt": "2023-11-10T14:20:00.000Z",
+      "birthDate": "1985-04-15",
+      "gender": "male",
+      "bloodType": "O+",
+      "address": {
+        "street": "Rua das Flores",
+        "number": "123",
+        "neighborhood": "Jardim América",
+        "city": "São Paulo",
+        "state": "SP",
+        "zipCode": "01234-567"
+      }
+    },
+    {
+      "id": "user6",
+      "name": "João Oliveira",
+      "email": "joao@example.com",
+      "password": "12345678",
+      "phone": "(11) 94567-8901",
+      "role": "patient",
+      "status": "active",
+      "createdAt": "2023-12-15T10:20:00.000Z",
+      "birthDate": "1978-10-08",
+      "gender": "male",
+      "bloodType": "B-",
+      "address": {
+        "street": "Rua Augusta",
+        "number": "789",
+        "neighborhood": "Consolação",
+        "city": "São Paulo",
+        "state": "SP",
+        "zipCode": "01305-000"
+      }
+    }
+  ],
+  "professionals": [
+    {
+      "id": "user5",
+      "name": "Dr. Ricardo Santos",
+      "email": "ricardo.santos@example.com",
+      "password": "12345678",
+      "phone": "(11) 95678-1234",
+      "role": "professional",
+      "status": "active",
+      "createdAt": "2023-10-20T11:30:00.000Z",
+      "specialty": "Ortopedia",
+      "crm": "CRM/SP 54321",
+      "availableDays": [
+        1,
+        3,
+        5
+      ],
+      "startTime": "09:00",
+      "endTime": "18:00",
+      "appointmentDuration": 45
+    },
+    {
+      "id": "user7",
+      "name": "Dra. Juliana Costa",
+      "email": "juliana@example.com",
+      "password": "12345678",
+      "phone": "(11) 93456-7890",
+      "role": "professional",
+      "status": "active",
+      "createdAt": "2023-11-15T08:30:00.000Z",
+      "specialty": "Dermatologia",
+      "crm": "CRM/SP 67890",
+      "availableDays": [
+        2,
+        4
+      ],
+      "startTime": "10:00",
+      "endTime": "19:00",
+      "appointmentDuration": 30
+    }
+  ],
+  "appointments": [
+    {
+      "id": "app3",
+      "patientId": "user2",
+      "professionalId": "user5",
+      "date": "2025-03-15T15:45:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Paciente relata dores nas costas."
+    },
+    {
+      "id": "app5",
+      "patientId": "user6",
+      "professionalId": "user7",
+      "date": "2025-04-25T11:00:00.000Z",
+      "status": "scheduled",
+      "type": "telemedicine",
+      "notes": "Paciente relata manchas na pele."
+    }
+  ],
+  "medical_records": [
+    {
+      "id": "rec3",
+      "patientId": "user6",
+      "professionalId": "user7",
+      "date": "2025-03-05T11:30:00.000Z",
+      "type": "consultation",
+      "title": "Consulta Dermatológica",
+      "description": "Paciente apresenta lesões avermelhadas na região do tórax.",
+      "diagnosis": "Dermatite de contato",
+      "symptoms": "Coceira intensa, vermelhidão, descamação da pele.",
+      "treatment": "Prescrição de corticoide tópico, recomendação de evitar alérgenos.",
+      "notes": "Paciente deve retornar em 15 dias para reavaliação."
+    }
+  ],
+  "prescriptions": [],
+  "financial_data": [
+    {
+      "id": "fin3",
+      "date": "2025-03-12",
+      "type": "income",
+      "category": "telemedicine",
+      "amount": 180,
+      "patientId": "user6",
+      "professionalId": "user7",
+      "appointmentId": "app5",
+      "description": "Teleconsulta Dermatológica - João Oliveira"
+    },
+    {
+      "id": "fin4",
+      "date": "2025-03-15",
+      "type": "expense",
+      "category": "salaries",
+      "amount": 5000,
+      "description": "Pagamento de Salários - Enfermagem"
+    },
+    {
+      "id": "fin5",
+      "date": "2025-03-15",
+      "type": "expense",
+      "category": "rent",
+      "amount": 3500,
+      "description": "Aluguel da Clínica - Março 2025"
+    },
+    {
+      "id": "fin6",
+      "date": "2025-03-20",
+      "type": "expense",
+      "category": "supplies",
+      "amount": 1200,
+      "description": "Materiais Médicos e Medicamentos"
+    }
+  ],
+  "consents": [
+    {
+      "id": "con1",
+      "userId": "user2",
+      "type": "data_processing",
+      "status": "accepted",
+      "date": "2023-11-10T14:25:00.000Z",
+      "details": "Consentimento para processamento de dados pessoais e de saúde conforme LGPD"
+    }
+  ],
+  "feedback": [
+    {
+      "id": "feed1",
+      "userId": "user2",
+      "appointmentId": "app3",
+      "professionalId": "user5",
+      "rating": 4,
+      "comment": "Bom atendimento, o médico foi atencioso e explicou bem o diagnóstico.",
+      "date": "2025-03-15T16:30:00.000Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "not1",
+      "userId": "user2",
+      "title": "Lembrete de Consulta",
+      "message": "Sua consulta com a Dra. Ana Oliveira está agendada para amanhã às 14:30.",
+      "type": "appointment_reminder",
+      "date": "2025-04-19T14:30:00.000Z",
+      "read": false
+    }
+  ]
 }

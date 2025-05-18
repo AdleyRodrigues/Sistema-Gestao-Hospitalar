@@ -58,6 +58,7 @@ import {
     YAxis
 } from 'recharts';
 import { useAuth } from '../../../hooks/useAuth';
+import { api } from '../../../services/api';
 
 // Interfaces para os tipos de dados
 interface AppointmentByType {
@@ -124,35 +125,75 @@ const AdminDashboard = () => {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            // Em uma implementação real, você faria chamadas específicas para cada conjunto de dados
-            // Aqui vamos simular os dados para demonstração
+            // Buscar dados reais da API
+            const [
+                patientsResponse,
+                professionalsResponse,
+                appointmentsResponse,
+                financialResponse
+            ] = await Promise.all([
+                api.get('/patients'),
+                api.get('/professionals'),
+                api.get('/appointments'),
+                api.get('/financial_data')
+            ]);
 
-            // Simulação de estatísticas gerais
+            const patients = patientsResponse.data || [];
+            const professionals = professionalsResponse.data || [];
+            const appointments = appointmentsResponse.data || [];
+            const financialData = financialResponse.data || [];
+
+            // Calcular estatísticas baseadas nos dados reais
+            const now = new Date();
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+            // Contagem de novos pacientes (no último mês)
+            const newPatientsCount = patients.filter((patient: any) => {
+                const createdAt = new Date(patient.createdAt);
+                return createdAt >= oneMonthAgo;
+            }).length;
+
+            // Contagem de consultas por status
+            const completedAppointmentsCount = appointments.filter(
+                (app: any) => app.status === 'completed'
+            ).length;
+
+            const cancelledAppointmentsCount = appointments.filter(
+                (app: any) => app.status === 'canceled'
+            ).length;
+
+            // Calcular dados financeiros
+            const income = financialData
+                .filter((item: any) => item.type === 'income')
+                .reduce((sum: number, item: any) => sum + item.amount, 0);
+
+            const expenses = financialData
+                .filter((item: any) => item.type === 'expense')
+                .reduce((sum: number, item: any) => sum + item.amount, 0);
+
             const dashboardStats = {
-                totalPatients: getRandomNumber(5000, 10000),
-                newPatients: getRandomNumber(50, 200),
-                totalProfessionals: getRandomNumber(100, 500),
-                totalAppointments: getRandomNumber(1000, 5000),
-                completedAppointments: getRandomNumber(800, 3000),
-                cancelledAppointments: getRandomNumber(50, 200),
-                revenue: getRandomNumber(50000, 200000),
-                expenses: getRandomNumber(30000, 100000),
-                profit: 0
+                totalPatients: patients.length,
+                newPatients: newPatientsCount,
+                totalProfessionals: professionals.length,
+                totalAppointments: appointments.length,
+                completedAppointments: completedAppointmentsCount,
+                cancelledAppointments: cancelledAppointmentsCount,
+                revenue: income,
+                expenses: expenses,
+                profit: income - expenses
             };
-
-            // Calcula o lucro baseado na receita e despesas
-            dashboardStats.profit = dashboardStats.revenue - dashboardStats.expenses;
 
             setStats(dashboardStats);
 
-            // Simulação de dados para os gráficos
-            generateChartData();
+            // Gerar dados para os gráficos baseados em dados reais
+            generateRealChartData(appointments, financialData);
 
-            // Simulação de consultas recentes
-            generateRecentAppointments();
+            // Gerar dados de consultas recentes
+            generateRealRecentAppointments(appointments, patients, professionals);
 
-            // Simulação de profissionais com mais consultas
-            generateTopProfessionals();
+            // Gerar dados de profissionais com mais consultas
+            generateRealTopProfessionals(appointments, professionals, financialData);
 
         } catch (error) {
             console.error('Erro ao buscar dados do dashboard:', error);
@@ -161,90 +202,172 @@ const AdminDashboard = () => {
         }
     };
 
-    const generateChartData = () => {
-        // Gera dados de consultas por tipo
+    const generateRealChartData = (appointments: any[], financialData: any[]) => {
+        // Contagem de consultas por tipo
+        const consultations = appointments.filter((app: any) => app.type === 'consultation').length;
+        const returns = appointments.filter((app: any) => app.type === 'return').length;
+        const telemedicine = appointments.filter((app: any) => app.type === 'telemedicine').length;
+
         const types = [
-            { name: 'Consultas', value: getRandomNumber(300, 500) },
-            { name: 'Retornos', value: getRandomNumber(200, 300) },
-            { name: 'Telemedicina', value: getRandomNumber(100, 200) },
-            { name: 'Exames', value: getRandomNumber(150, 250) },
-            { name: 'Procedimentos', value: getRandomNumber(50, 150) }
+            { name: 'Consultas', value: consultations },
+            { name: 'Retornos', value: returns },
+            { name: 'Telemedicina', value: telemedicine }
         ];
         setAppointmentsByType(types);
 
-        // Gera dados de receita por período
-        const revenueByPeriod = [];
+        // Dados de receita por período
+        const revenueByPeriod: RevenueData[] = [];
+
+        // Função para filtrar por data
+        const filterByDate = (data: any[], startDate: Date, endDate: Date) => {
+            return data.filter((item: any) => {
+                const itemDate = new Date(item.date);
+                return itemDate >= startDate && itemDate <= endDate;
+            });
+        };
 
         if (period === 'week') {
             // Dados para a semana
             for (let i = 6; i >= 0; i--) {
                 const date = subDays(new Date(), i);
+                const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+                const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+
+                const dayIncome = filterByDate(
+                    financialData.filter((item: any) => item.type === 'income'),
+                    startOfDay,
+                    endOfDay
+                ).reduce((sum: number, item: any) => sum + item.amount, 0);
+
+                const dayExpenses = filterByDate(
+                    financialData.filter((item: any) => item.type === 'expense'),
+                    startOfDay,
+                    endOfDay
+                ).reduce((sum: number, item: any) => sum + item.amount, 0);
+
                 revenueByPeriod.push({
                     name: format(date, 'EEE', { locale: ptBR }),
-                    receita: getRandomNumber(5000, 15000),
-                    despesas: getRandomNumber(3000, 8000)
+                    receita: dayIncome,
+                    despesas: dayExpenses
                 });
             }
         } else if (period === 'month') {
-            // Dados para o mês
+            // Dados para o mês (agrupados a cada 3 dias)
             for (let i = 0; i < 30; i += 3) {
-                const date = subDays(new Date(), i);
+                const endDate = subDays(new Date(), i);
+                const startDate = subDays(endDate, 2);
+
+                const periodIncome = filterByDate(
+                    financialData.filter((item: any) => item.type === 'income'),
+                    startDate,
+                    endDate
+                ).reduce((sum: number, item: any) => sum + item.amount, 0);
+
+                const periodExpenses = filterByDate(
+                    financialData.filter((item: any) => item.type === 'expense'),
+                    startDate,
+                    endDate
+                ).reduce((sum: number, item: any) => sum + item.amount, 0);
+
                 revenueByPeriod.push({
-                    name: format(date, 'dd/MM'),
-                    receita: getRandomNumber(10000, 30000),
-                    despesas: getRandomNumber(5000, 15000)
+                    name: format(endDate, 'dd/MM'),
+                    receita: periodIncome,
+                    despesas: periodExpenses
                 });
             }
         } else {
-            // Dados para o ano
+            // Dados para o ano (agrupados por mês)
             const months = [
                 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
                 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
             ];
 
+            const currentYear = new Date().getFullYear();
+
             for (let i = 0; i < 12; i++) {
+                const startDate = new Date(currentYear, i, 1);
+                const endDate = new Date(currentYear, i + 1, 0);
+
+                const monthIncome = filterByDate(
+                    financialData.filter((item: any) => item.type === 'income'),
+                    startDate,
+                    endDate
+                ).reduce((sum: number, item: any) => sum + item.amount, 0);
+
+                const monthExpenses = filterByDate(
+                    financialData.filter((item: any) => item.type === 'expense'),
+                    startDate,
+                    endDate
+                ).reduce((sum: number, item: any) => sum + item.amount, 0);
+
                 revenueByPeriod.push({
                     name: months[i],
-                    receita: getRandomNumber(30000, 90000),
-                    despesas: getRandomNumber(15000, 50000)
+                    receita: monthIncome,
+                    despesas: monthExpenses
                 });
             }
         }
 
         setRevenueData(revenueByPeriod);
 
-        // Gera dados de taxa de ocupação
-        const occupancyData = [];
+        // Calcular taxa de ocupação baseado nas consultas agendadas vs capacidade total
+        const occupancyData: OccupancyData[] = [];
 
         if (period === 'week') {
-            // Dados para a semana
             for (let i = 6; i >= 0; i--) {
                 const date = subDays(new Date(), i);
+                const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+                const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+
+                // Contar consultas no dia
+                const dayAppointments = filterByDate(appointments, startOfDay, endOfDay).length;
+
+                // Estimar capacidade total baseada no número de profissionais
+                // Assumindo 8 horas por dia e média de 30 min por consulta = 16 slots por profissional
+                const capacity = 16 * stats.totalProfessionals;
+
+                // Evitar divisão por zero
+                const rate = capacity > 0 ? (dayAppointments / capacity) * 100 : 0;
+
                 occupancyData.push({
                     name: format(date, 'EEE', { locale: ptBR }),
-                    taxa: getRandomNumber(40, 90)
+                    taxa: Math.min(Math.round(rate), 100) // Garantir máximo de 100%
                 });
             }
         } else if (period === 'month') {
-            // Dados para o mês
             for (let i = 0; i < 30; i += 3) {
-                const date = subDays(new Date(), i);
+                const endDate = subDays(new Date(), i);
+                const startDate = subDays(endDate, 2);
+
+                const periodAppointments = filterByDate(appointments, startDate, endDate).length;
+                const capacity = 16 * 3 * stats.totalProfessionals; // 3 dias
+                const rate = capacity > 0 ? (periodAppointments / capacity) * 100 : 0;
+
                 occupancyData.push({
-                    name: format(date, 'dd/MM'),
-                    taxa: getRandomNumber(40, 90)
+                    name: format(endDate, 'dd/MM'),
+                    taxa: Math.min(Math.round(rate), 100)
                 });
             }
         } else {
-            // Dados para o ano
             const months = [
                 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
                 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
             ];
 
+            const currentYear = new Date().getFullYear();
+
             for (let i = 0; i < 12; i++) {
+                const startDate = new Date(currentYear, i, 1);
+                const endDate = new Date(currentYear, i + 1, 0);
+                const daysInMonth = endDate.getDate();
+
+                const monthAppointments = filterByDate(appointments, startDate, endDate).length;
+                const capacity = 16 * daysInMonth * stats.totalProfessionals;
+                const rate = capacity > 0 ? (monthAppointments / capacity) * 100 : 0;
+
                 occupancyData.push({
                     name: months[i],
-                    taxa: getRandomNumber(40, 90)
+                    taxa: Math.min(Math.round(rate), 100)
                 });
             }
         }
@@ -252,52 +375,87 @@ const AdminDashboard = () => {
         setOccupancyRate(occupancyData);
     };
 
-    const generateRecentAppointments = () => {
-        const appointments = [];
+    const generateRealRecentAppointments = (appointments: any[], patients: any[], professionals: any[]) => {
+        // Criar mapas para rápido acesso
+        const patientMap = new Map();
+        patients.forEach((patient: any) => {
+            patientMap.set(patient.id, patient.name);
+        });
 
-        for (let i = 0; i < 5; i++) {
-            const date = subDays(new Date(), getRandomNumber(0, 3));
-            const status = ['scheduled', 'completed', 'cancelled'][getRandomNumber(0, 2)] as 'scheduled' | 'completed' | 'cancelled';
-            const type = ['consultation', 'return', 'telemedicine'][getRandomNumber(0, 2)] as 'consultation' | 'return' | 'telemedicine';
-
-            appointments.push({
-                id: `app-${i + 1}`,
-                patientName: ['João Silva', 'Maria Oliveira', 'Pedro Santos', 'Ana Costa', 'Carlos Ferreira'][getRandomNumber(0, 4)],
-                professionalName: ['Dr. Roberto Martins', 'Dra. Juliana Alves', 'Dr. Ricardo Souza', 'Dra. Isabela Lima', 'Dr. Marcos Pereira'][getRandomNumber(0, 4)],
-                specialty: ['Cardiologia', 'Ortopedia', 'Clínica Geral', 'Dermatologia', 'Oftalmologia'][getRandomNumber(0, 4)],
-                date: format(date, 'dd/MM/yyyy'),
-                time: `${getRandomNumber(8, 17)}:${['00', '15', '30', '45'][getRandomNumber(0, 3)]}`,
-                status,
-                type
+        const professionalMap = new Map();
+        professionals.forEach((prof: any) => {
+            professionalMap.set(prof.id, {
+                name: prof.name,
+                specialty: prof.specialty
             });
-        }
+        });
 
-        setRecentAppointments(appointments);
+        // Ordenar consultas por data (mais recentes primeiro)
+        const sortedAppointments = [...appointments].sort((a, b) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
+        // Pegar as 5 consultas mais recentes
+        const recentApps = sortedAppointments.slice(0, 5).map((app: any) => {
+            const appointmentDate = new Date(app.date);
+            const professional = professionalMap.get(app.professionalId) || {};
+
+            return {
+                id: app.id,
+                patientName: patientMap.get(app.patientId) || 'Paciente não encontrado',
+                professionalName: professional.name || 'Profissional não encontrado',
+                specialty: professional.specialty || 'Especialidade não definida',
+                date: format(appointmentDate, 'dd/MM/yyyy'),
+                time: format(appointmentDate, 'HH:mm'),
+                status: app.status || 'scheduled',
+                type: app.type || 'consultation'
+            };
+        });
+
+        setRecentAppointments(recentApps);
     };
 
-    const generateTopProfessionals = () => {
-        const professionals = [];
+    const generateRealTopProfessionals = (appointments: any[], professionals: any[], financialData: any[]) => {
+        // Contar consultas por profissional
+        const appointmentCounts = new Map();
+        appointments.forEach((app: any) => {
+            const profId = app.professionalId;
+            appointmentCounts.set(profId, (appointmentCounts.get(profId) || 0) + 1);
+        });
 
-        for (let i = 0; i < 5; i++) {
-            professionals.push({
-                id: `prof-${i + 1}`,
-                name: ['Dr. Roberto Martins', 'Dra. Juliana Alves', 'Dr. Ricardo Souza', 'Dra. Isabela Lima', 'Dr. Marcos Pereira'][i],
-                specialty: ['Cardiologia', 'Ortopedia', 'Clínica Geral', 'Dermatologia', 'Oftalmologia'][i],
-                appointmentsCount: getRandomNumber(50, 150),
-                revenue: getRandomNumber(10000, 40000)
+        // Calcular receita por profissional
+        const revenueByProfessional = new Map();
+        financialData
+            .filter((item: any) => item.type === 'income' && item.professionalId)
+            .forEach((item: any) => {
+                const profId = item.professionalId;
+                revenueByProfessional.set(profId, (revenueByProfessional.get(profId) || 0) + item.amount);
             });
-        }
 
-        // Ordena por quantidade de consultas (decrescente)
-        professionals.sort((a, b) => b.appointmentsCount - a.appointmentsCount);
+        // Criar lista de profissionais com estatísticas
+        const professionalsWithStats = professionals.map((prof: any) => ({
+            id: prof.id,
+            name: prof.name,
+            specialty: prof.specialty,
+            appointmentsCount: appointmentCounts.get(prof.id) || 0,
+            revenue: revenueByProfessional.get(prof.id) || 0
+        }));
 
-        setTopProfessionals(professionals);
+        // Ordenar por número de consultas (decrescente)
+        const sortedProfessionals = professionalsWithStats.sort(
+            (a, b) => b.appointmentsCount - a.appointmentsCount
+        );
+
+        // Pegar os 5 profissionais com mais consultas
+        setTopProfessionals(sortedProfessionals.slice(0, 5));
     };
 
+    // Função auxiliar para valores aleatórios - usada apenas quando não há dados suficientes
     const getRandomNumber = (min: number, max: number) => {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+        return Math.floor(Math.random() * (max - min + 1) + min);
     };
 
+    // Formatar valores monetários
     const formatCurrency = (value: number) => {
         return value.toLocaleString('pt-BR', {
             style: 'currency',

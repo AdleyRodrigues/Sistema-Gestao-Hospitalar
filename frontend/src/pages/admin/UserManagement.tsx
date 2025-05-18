@@ -1,41 +1,24 @@
+import { useState, useEffect } from 'react';
 import {
-    CalendarMonth,
-    Delete,
-    Edit,
-    FilterList,
-    HealthAndSafety,
-    Mail,
-    MedicalServices,
-    MoreVert,
-    Person,
-    PersonAdd,
-    Phone,
-    Search,
-    Visibility,
-    VisibilityOff
-} from '@mui/icons-material';
-import {
-    Alert,
-    Avatar,
     Box,
     Button,
+    Card,
     Chip,
-    CircularProgress,
+    Container,
     Dialog,
     DialogActions,
     DialogContent,
+    DialogContentText,
     DialogTitle,
+    Divider,
     FormControl,
     Grid,
     IconButton,
     InputAdornment,
     InputLabel,
-    Menu,
     MenuItem,
     Paper,
     Select,
-    SelectChangeEvent,
-    Snackbar,
     Tab,
     Table,
     TableBody,
@@ -46,54 +29,40 @@ import {
     TableRow,
     Tabs,
     TextField,
-    Typography
+    Tooltip,
+    Typography,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
-import { format } from 'date-fns';
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import {
+    Add,
+    Close,
+    Delete,
+    Edit,
+    FilterAlt,
+    HealthAndSafety,
+    MedicalServices,
+    Person,
+    PersonAdd,
+    PersonOff,
+    Search,
+    Visibility
+} from '@mui/icons-material';
 import { api } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
-// Tipos
+// Interfaces para os usuários
 interface User {
     id: string;
     name: string;
     email: string;
-    phone: string;
-    role: 'admin' | 'professional' | 'patient';
-    status: 'active' | 'inactive';
+    phone?: string;
+    role: string;
+    status: string;
     createdAt: string;
-}
-
-interface Patient extends User {
-    birthDate: string;
-    gender: string;
-    bloodType?: string;
-    address?: {
-        street: string;
-        number: string;
-        neighborhood: string;
-        city: string;
-        state: string;
-        zipCode: string;
-    };
-}
-
-interface Professional extends User {
-    specialty: string;
+    specialty?: string;
     crm?: string;
-    availableDays: number[];
-    startTime: string;
-    endTime: string;
-}
-
-// Interface para o objeto userData
-interface UserFormData {
-    name: string;
-    email: string;
-    phone: string;
-    role: 'admin' | 'professional' | 'patient';
-    status: 'active' | 'inactive';
-    password?: string;
     birthDate?: string;
     gender?: string;
     bloodType?: string;
@@ -105,137 +74,109 @@ interface UserFormData {
         state: string;
         zipCode: string;
     };
-    specialty?: string;
-    crm?: string;
-    availableDays?: number[];
-    startTime?: string;
-    endTime?: string;
-    appointmentDuration?: number;
 }
 
-const AdminUserManagement = () => {
-    useAuth();
-    const [tabValue, setTabValue] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
+const UserManagement = () => {
+    const theme = useTheme();
+    const navigate = useNavigate();
+    const { user: currentUser } = useAuth();
+    const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+    const isExtraSmall = useMediaQuery('(max-width:400px)');
+
+    // Estados para gerenciar os usuários e filtros
     const [users, setUsers] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
-    const [openUserDialog, setOpenUserDialog] = useState(false);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [showPassword, setShowPassword] = useState(false);
-    const [filterMenuAnchorEl, setFilterMenuAnchorEl] = useState<null | HTMLElement>(null);
-    const [actionMenuAnchorEl, setActionMenuAnchorEl] = useState<null | HTMLElement>(null);
-    const [, setSelectedRow] = useState<string | null>(null);
-    const [snackbar, setSnackbar] = useState({
-        open: false,
-        message: '',
-        severity: 'success' as 'success' | 'error' | 'info' | 'warning'
-    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Formulário de usuário
-    const [userForm, setUserForm] = useState({
+    // Estado para formulário de usuário
+    const [userForm, setUserForm] = useState<Partial<User>>({
         name: '',
         email: '',
         phone: '',
-        password: '',
         role: 'patient',
         status: 'active',
-        specialty: '',
-        crm: '',
-        birthDate: '',
-        gender: 'male',
-        bloodType: '',
-        address: {
-            street: '',
-            number: '',
-            neighborhood: '',
-            city: '',
-            state: '',
-            zipCode: ''
-        }
     });
 
-    // Erros do formulário
-    const [formErrors, setFormErrors] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        password: '',
-        specialty: '',
-        crm: '',
-        birthDate: ''
-    });
+    // Estados para controles de UI
+    const [searchTerm, setSearchTerm] = useState('');
+    const [tabValue, setTabValue] = useState(0);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [openDialog, setOpenDialog] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [isEdit, setIsEdit] = useState(false);
 
-    // Status de filtro
-    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-
+    // Carregar usuários da API
     useEffect(() => {
-        fetchUsers();
-    }, [tabValue]);
+        const fetchUsers = async () => {
+            setLoading(true);
+            setError(null);
 
-    useEffect(() => {
-        filterUsers();
-    }, [searchTerm, users, tabValue, statusFilter]);
+            try {
+                // Buscar todos os tipos de usuários
+                const usersResponse = await api.get('/users');
+                const patientsResponse = await api.get('/patients');
+                const professionalsResponse = await api.get('/professionals');
 
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            // Determina qual endpoint usar com base na aba selecionada
-            let endpoint = '';
-            switch (tabValue) {
-                case 0:
-                    endpoint = '/users';
-                    break;
-                case 1:
-                    endpoint = '/patients';
-                    break;
-                case 2:
-                    endpoint = '/professionals';
-                    break;
-                case 3:
-                    endpoint = '/users?role=admin';
-                    break;
-                default:
-                    endpoint = '/users';
+                // Combinar e processar os dados para ter informações completas
+                let allUsers = usersResponse.data || [];
+                const patients = patientsResponse.data || [];
+                const professionals = professionalsResponse.data || [];
+
+                // Enriquecer os dados dos usuários com informações específicas
+                allUsers = allUsers.map((user: User) => {
+                    if (user.role === 'patient') {
+                        const patientData = patients.find((p: User) => p.id === user.id);
+                        return { ...user, ...patientData };
+                    } else if (user.role === 'professional') {
+                        const professionalData = professionals.find((p: User) => p.id === user.id);
+                        return { ...user, ...professionalData };
+                    }
+                    return user;
+                });
+
+                setUsers(allUsers);
+                setFilteredUsers(allUsers);
+            } catch (err) {
+                console.error('Erro ao buscar usuários:', err);
+                setError('Erro ao carregar dados dos usuários. Por favor, tente novamente mais tarde.');
+            } finally {
+                setLoading(false);
             }
+        };
 
-            const response = await api.get(endpoint);
-            setUsers(response.data);
-        } catch (error) {
-            console.error('Erro ao buscar usuários:', error);
-            showSnackbar('Erro ao carregar lista de usuários', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
+        fetchUsers();
+    }, []);
 
-    const filterUsers = () => {
-        // Aplica os filtros (busca por texto e status)
-        let filtered = users;
+    // Efeito para aplicar filtros
+    useEffect(() => {
+        let result = [...users];
 
-        // Filtra por status se não for "todos"
-        if (statusFilter !== 'all') {
-            filtered = filtered.filter(user => user.status === statusFilter);
-        }
+        // Filtro por tab
+        if (tabValue === 1) result = result.filter(user => user.role === 'patient');
+        else if (tabValue === 2) result = result.filter(user => user.role === 'professional');
+        else if (tabValue === 3) result = result.filter(user => user.role === 'admin');
+        else if (tabValue === 4) result = result.filter(user => user.status === 'active');
+        else if (tabValue === 5) result = result.filter(user => user.status === 'inactive');
 
-        // Filtra pelo termo de busca
+        // Filtro por termo de busca
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            filtered = filtered.filter(
+            result = result.filter(
                 user =>
                     user.name.toLowerCase().includes(term) ||
                     user.email.toLowerCase().includes(term) ||
-                    (user as Professional).specialty?.toLowerCase().includes(term)
+                    (user.phone && user.phone.includes(term))
             );
         }
 
-        setFilteredUsers(filtered);
-        setPage(0); // Reseta para a primeira página ao filtrar
-    };
+        setFilteredUsers(result);
+        setPage(0); // Reset para a primeira página ao filtrar
+    }, [users, tabValue, searchTerm]);
 
+    // Handlers
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
     };
@@ -253,893 +194,557 @@ const AdminUserManagement = () => {
         setPage(0);
     };
 
-    const handleFormInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }> | SelectChangeEvent
-    ) => {
-        const { name, value } = e.target as { name: string; value: unknown };
+    const handleOpenDialog = (edit: boolean = false, userId: string | null = null) => {
+        setIsEdit(edit);
 
-        // Verifica se é um campo aninhado (endereço)
-        if (name.includes('.')) {
-            const [parent, child] = name.split('.');
+        if (edit && userId) {
+            const userToEdit = users.find(u => u.id === userId);
+            if (userToEdit) {
+                setUserForm({
+                    id: userToEdit.id,
+                    name: userToEdit.name,
+                    email: userToEdit.email,
+                    phone: userToEdit.phone || '',
+                    role: userToEdit.role,
+                    status: userToEdit.status,
+                    specialty: userToEdit.specialty || '',
+                    crm: userToEdit.crm || '',
+                    birthDate: userToEdit.birthDate || '',
+                    gender: userToEdit.gender || '',
+                    bloodType: userToEdit.bloodType || '',
+                    // Não incluímos o endereço completo para simplificar, mas poderia ser adicionado
+                });
+                setSelectedUserId(userId);
+            }
+        } else {
+            // Reset do formulário para novo usuário
+            setUserForm({
+                name: '',
+                email: '',
+                phone: '',
+                role: 'patient',
+                status: 'active',
+                specialty: '',
+                crm: '',
+                birthDate: '',
+                gender: '',
+                bloodType: '',
+            });
+            setSelectedUserId(null);
+        }
+
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+    };
+
+    const handleDeleteConfirm = (userId: string) => {
+        setSelectedUserId(userId);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleFormInputChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+        const { name, value } = e.target;
+        if (name) {
             setUserForm(prev => ({
                 ...prev,
-                [parent]: {
-                    ...prev[parent as keyof typeof prev] as object,
-                    [child]: value
-                }
+                [name]: value
             }));
-        } else {
-            setUserForm(prev => ({ ...prev, [name]: value }));
-        }
-
-        // Limpa o erro do campo
-        if (name in formErrors) {
-            setFormErrors(prev => ({ ...prev, [name]: '' }));
         }
     };
 
-    const handleOpenAddUserDialog = () => {
-        // Reseta o formulário
-        setUserForm({
-            name: '',
-            email: '',
-            phone: '',
-            password: '',
-            role: tabValue === 1 ? 'patient' : tabValue === 2 ? 'professional' : 'patient',
-            status: 'active',
-            specialty: '',
-            crm: '',
-            birthDate: '',
-            gender: 'male',
-            bloodType: '',
-            address: {
-                street: '',
-                number: '',
-                neighborhood: '',
-                city: '',
-                state: '',
-                zipCode: ''
-            }
-        });
-        setFormErrors({
-            name: '',
-            email: '',
-            phone: '',
-            password: '',
-            specialty: '',
-            crm: '',
-            birthDate: ''
-        });
-        setSelectedUser(null);
-        setOpenUserDialog(true);
-    };
-
-    const handleOpenEditUserDialog = (user: User) => {
-        setSelectedUser(user);
-
-        // Preenche o formulário com os dados do usuário
-        setUserForm({
-            name: user.name,
-            email: user.email,
-            phone: user.phone || '',
-            password: '', // Não preenche a senha para edição
-            role: user.role,
-            status: user.status,
-            specialty: (user as Professional).specialty || '',
-            crm: (user as Professional).crm || '',
-            birthDate: (user as Patient).birthDate || '',
-            gender: (user as Patient).gender || 'male',
-            bloodType: (user as Patient).bloodType || '',
-            address: (user as Patient).address || {
-                street: '',
-                number: '',
-                neighborhood: '',
-                city: '',
-                state: '',
-                zipCode: ''
-            }
-        });
-
-        setFormErrors({
-            name: '',
-            email: '',
-            phone: '',
-            password: '',
-            specialty: '',
-            crm: '',
-            birthDate: ''
-        });
-
-        setOpenUserDialog(true);
-    };
-
-    const handleCloseUserDialog = () => {
-        setOpenUserDialog(false);
-    };
-
-    const handleOpenDeleteDialog = (user: User) => {
-        setSelectedUser(user);
-        setDeleteDialogOpen(true);
-    };
-
-    const handleCloseDeleteDialog = () => {
-        setDeleteDialogOpen(false);
-        setSelectedUser(null);
-    };
-
-    const handleOpenActionMenu = (event: React.MouseEvent<HTMLElement>, userId: string) => {
-        setActionMenuAnchorEl(event.currentTarget);
-        setSelectedRow(userId);
-    };
-
-    const handleCloseActionMenu = () => {
-        setActionMenuAnchorEl(null);
-        setSelectedRow(null);
-    };
-
-    const handleOpenFilterMenu = (event: React.MouseEvent<HTMLElement>) => {
-        setFilterMenuAnchorEl(event.currentTarget);
-    };
-
-    const handleCloseFilterMenu = () => {
-        setFilterMenuAnchorEl(null);
-    };
-
-    const handleFilterByStatus = (status: 'all' | 'active' | 'inactive') => {
-        setStatusFilter(status);
-        handleCloseFilterMenu();
-    };
-
-    const validateForm = () => {
-        let isValid = true;
-        const errors = {
-            name: '',
-            email: '',
-            phone: '',
-            password: '',
-            specialty: '',
-            crm: '',
-            birthDate: ''
-        };
-
-        // Validações básicas
-        if (!userForm.name.trim()) {
-            errors.name = 'O nome é obrigatório';
-            isValid = false;
-        }
-
-        if (!userForm.email.trim()) {
-            errors.email = 'O e-mail é obrigatório';
-            isValid = false;
-        } else if (!/\S+@\S+\.\S+/.test(userForm.email)) {
-            errors.email = 'E-mail inválido';
-            isValid = false;
-        }
-
-        if (!userForm.phone.trim()) {
-            errors.phone = 'O telefone é obrigatório';
-            isValid = false;
-        }
-
-        // Senha é obrigatória apenas para novos usuários
-        if (!selectedUser && !userForm.password.trim()) {
-            errors.password = 'A senha é obrigatória';
-            isValid = false;
-        }
-
-        // Validações específicas por tipo de usuário
-        if (userForm.role === 'professional') {
-            if (!userForm.specialty.trim()) {
-                errors.specialty = 'A especialidade é obrigatória';
-                isValid = false;
-            }
-
-            if (!userForm.crm?.trim()) {
-                errors.crm = 'O registro profissional é obrigatório';
-                isValid = false;
-            }
-        }
-
-        if (userForm.role === 'patient') {
-            if (!userForm.birthDate) {
-                errors.birthDate = 'A data de nascimento é obrigatória';
-                isValid = false;
-            }
-        }
-
-        setFormErrors(errors);
-        return isValid;
-    };
-
-    const handleSaveUser = async () => {
-        if (!validateForm()) return;
-
-        setLoading(true);
+    const handleSubmitUser = async () => {
         try {
-            // Prepara os dados específicos com base no tipo de usuário
-            let userData: UserFormData = {
-                name: userForm.name,
-                email: userForm.email,
-                phone: userForm.phone,
-                role: userForm.role as 'admin' | 'professional' | 'patient',
-                status: userForm.status as 'active' | 'inactive'
-            };
+            if (isEdit && selectedUserId) {
+                // Atualizar usuário existente
+                await api.put(`/users/${selectedUserId}`, userForm);
 
-            // Adiciona senha apenas para novos usuários
-            if (!selectedUser && userForm.password) {
-                userData.password = userForm.password;
-            }
+                // Atualizar dados específicos dependendo do tipo de usuário
+                if (userForm.role === 'patient') {
+                    await api.put(`/patients/${selectedUserId}`, userForm);
+                } else if (userForm.role === 'professional') {
+                    await api.put(`/professionals/${selectedUserId}`, userForm);
+                }
 
-            // Adiciona dados específicos de paciente
-            if (userForm.role === 'patient') {
-                userData = {
-                    ...userData,
-                    birthDate: userForm.birthDate,
-                    gender: userForm.gender,
-                    bloodType: userForm.bloodType,
-                    address: userForm.address
-                };
-            }
+                // Atualizar estado local
+                setUsers(prev =>
+                    prev.map(u =>
+                        u.id === selectedUserId ? { ...u, ...userForm } : u
+                    )
+                );
 
-            // Adiciona dados específicos de profissional
-            if (userForm.role === 'professional') {
-                userData = {
-                    ...userData,
-                    specialty: userForm.specialty,
-                    crm: userForm.crm,
-                    // Valores padrão para disponibilidade
-                    availableDays: [1, 2, 3, 4, 5], // Segunda a sexta
-                    startTime: '08:00',
-                    endTime: '18:00',
-                    appointmentDuration: 30 // 30 minutos por consulta
-                };
-            }
-
-            // Determina o endpoint com base no tipo de usuário
-            const endpoint = userForm.role === 'patient'
-                ? '/patients'
-                : userForm.role === 'professional'
-                    ? '/professionals'
-                    : '/users';
-
-            if (selectedUser) {
-                // Atualização
-                await api.put(`${endpoint}/${selectedUser.id}`, userData);
-                showSnackbar('Usuário atualizado com sucesso!', 'success');
+                alert('Usuário atualizado com sucesso!');
             } else {
-                // Criação
-                await api.post(endpoint, userData);
-                showSnackbar('Usuário criado com sucesso!', 'success');
+                // Criar novo usuário
+                // Em uma implementação real, geraria um ID único
+                const newId = `user${Date.now()}`;
+                const newUser = {
+                    ...userForm,
+                    id: newId,
+                    createdAt: new Date().toISOString()
+                };
+
+                await api.post('/users', newUser);
+
+                // Adicionar aos dados específicos
+                if (userForm.role === 'patient') {
+                    await api.post('/patients', newUser);
+                } else if (userForm.role === 'professional') {
+                    await api.post('/professionals', newUser);
+                }
+
+                // Atualizar estado local
+                setUsers(prev => [...prev, newUser as User]);
+
+                alert('Usuário criado com sucesso!');
             }
 
-            handleCloseUserDialog();
-            fetchUsers(); // Atualiza a lista
+            handleCloseDialog();
         } catch (error) {
             console.error('Erro ao salvar usuário:', error);
-            showSnackbar('Erro ao salvar usuário. Verifique os dados e tente novamente.', 'error');
-        } finally {
-            setLoading(false);
+            alert('Erro ao salvar usuário. Por favor, tente novamente.');
         }
     };
 
     const handleDeleteUser = async () => {
-        if (!selectedUser) return;
+        if (!selectedUserId) return;
 
-        setLoading(true);
         try {
-            // Determina o endpoint com base no tipo de usuário
-            const endpoint = selectedUser.role === 'patient'
-                ? '/patients'
-                : selectedUser.role === 'professional'
-                    ? '/professionals'
-                    : '/users';
+            // Excluir usuário
+            await api.delete(`/users/${selectedUserId}`);
 
-            await api.delete(`${endpoint}/${selectedUser.id}`);
+            // Excluir dados específicos se necessário
+            const userToDelete = users.find(u => u.id === selectedUserId);
+            if (userToDelete) {
+                if (userToDelete.role === 'patient') {
+                    await api.delete(`/patients/${selectedUserId}`);
+                } else if (userToDelete.role === 'professional') {
+                    await api.delete(`/professionals/${selectedUserId}`);
+                }
+            }
 
-            showSnackbar('Usuário excluído com sucesso!', 'success');
-            handleCloseDeleteDialog();
-            fetchUsers(); // Atualiza a lista
+            // Atualizar estado local
+            setUsers(prev => prev.filter(u => u.id !== selectedUserId));
+
+            alert('Usuário excluído com sucesso!');
         } catch (error) {
             console.error('Erro ao excluir usuário:', error);
-            showSnackbar('Erro ao excluir usuário', 'error');
+            alert('Erro ao excluir usuário. Por favor, tente novamente.');
         } finally {
-            setLoading(false);
+            setDeleteConfirmOpen(false);
+            setSelectedUserId(null);
         }
     };
 
-    const handleTogglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
+    const handleViewUserDetails = (userId: string) => {
+        const userToView = users.find(u => u.id === userId);
+        if (!userToView) return;
+
+        if (userToView.role === 'patient') {
+            navigate(`/patient/profile/${userId}`);
+        } else if (userToView.role === 'professional') {
+            navigate(`/professional/profile/${userId}`);
+        } else if (userToView.role === 'admin') {
+            navigate(`/admin/profile/${userId}`);
+        }
     };
 
-    const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
-        setSnackbar({
-            open: true,
-            message,
-            severity
-        });
-    };
+    // Renderização de células da tabela
+    const renderRoleCell = (role: string) => {
+        let icon;
+        let label;
+        let color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" = "default";
 
-    const handleCloseSnackbar = () => {
-        setSnackbar(prev => ({ ...prev, open: false }));
-    };
+        switch (role) {
+            case 'admin':
+                icon = <Person />;
+                label = 'Administrador';
+                color = "secondary";
+                break;
+            case 'professional':
+                icon = <MedicalServices />;
+                label = 'Profissional';
+                color = "primary";
+                break;
+            case 'patient':
+                icon = <HealthAndSafety />;
+                label = 'Paciente';
+                color = "info";
+                break;
+            default:
+                icon = <Person />;
+                label = role;
+        }
 
-    const renderUserDialogContent = () => {
         return (
-            <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                    <TextField
-                        fullWidth
-                        label="Nome Completo"
-                        name="name"
-                        value={userForm.name}
-                        onChange={handleFormInputChange}
-                        error={!!formErrors.name}
-                        helperText={formErrors.name}
-                        required
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <TextField
-                        fullWidth
-                        label="E-mail"
-                        name="email"
-                        type="email"
-                        value={userForm.email}
-                        onChange={handleFormInputChange}
-                        error={!!formErrors.email}
-                        helperText={formErrors.email}
-                        required
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <TextField
-                        fullWidth
-                        label="Telefone"
-                        name="phone"
-                        value={userForm.phone}
-                        onChange={handleFormInputChange}
-                        error={!!formErrors.phone}
-                        helperText={formErrors.phone}
-                        required
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <TextField
-                        fullWidth
-                        label="Senha"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={userForm.password}
-                        onChange={handleFormInputChange}
-                        error={!!formErrors.password}
-                        helperText={formErrors.password || (selectedUser ? 'Deixe em branco para manter a senha atual' : '')}
-                        required={!selectedUser}
-                        InputProps={{
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <IconButton onClick={handleTogglePasswordVisibility} edge="end">
-                                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                                    </IconButton>
-                                </InputAdornment>
-                            )
-                        }}
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
-                        <InputLabel id="user-role-label">Perfil</InputLabel>
-                        <Select
-                            labelId="user-role-label"
-                            id="user-role"
-                            name="role"
-                            value={userForm.role}
-                            onChange={handleFormInputChange}
-                            label="Perfil"
-                        >
-                            <MenuItem value="patient">Paciente</MenuItem>
-                            <MenuItem value="professional">Profissional de Saúde</MenuItem>
-                            <MenuItem value="admin">Administrador</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
-                        <InputLabel id="user-status-label">Status</InputLabel>
-                        <Select
-                            labelId="user-status-label"
-                            id="user-status"
-                            name="status"
-                            value={userForm.status}
-                            onChange={handleFormInputChange}
-                            label="Status"
-                        >
-                            <MenuItem value="active">Ativo</MenuItem>
-                            <MenuItem value="inactive">Inativo</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Grid>
-
-                {/* Campos específicos para Profissional de Saúde */}
-                {userForm.role === 'professional' && (
-                    <>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Especialidade"
-                                name="specialty"
-                                value={userForm.specialty}
-                                onChange={handleFormInputChange}
-                                error={!!formErrors.specialty}
-                                helperText={formErrors.specialty}
-                                required
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="CRM/Registro Profissional"
-                                name="crm"
-                                value={userForm.crm}
-                                onChange={handleFormInputChange}
-                                error={!!formErrors.crm}
-                                helperText={formErrors.crm}
-                                required
-                            />
-                        </Grid>
-                    </>
-                )}
-
-                {/* Campos específicos para Paciente */}
-                {userForm.role === 'patient' && (
-                    <>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Data de Nascimento"
-                                name="birthDate"
-                                type="date"
-                                value={userForm.birthDate}
-                                onChange={handleFormInputChange}
-                                error={!!formErrors.birthDate}
-                                helperText={formErrors.birthDate}
-                                required
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth>
-                                <InputLabel id="gender-label">Gênero</InputLabel>
-                                <Select
-                                    labelId="gender-label"
-                                    id="gender"
-                                    name="gender"
-                                    value={userForm.gender}
-                                    onChange={handleFormInputChange}
-                                    label="Gênero"
-                                >
-                                    <MenuItem value="male">Masculino</MenuItem>
-                                    <MenuItem value="female">Feminino</MenuItem>
-                                    <MenuItem value="other">Outro</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                fullWidth
-                                label="Tipo Sanguíneo"
-                                name="bloodType"
-                                value={userForm.bloodType}
-                                onChange={handleFormInputChange}
-                                placeholder="Ex: A+, O-, AB+"
-                            />
-                        </Grid>
-
-                        <Grid item xs={12}>
-                            <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
-                                Endereço
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={9}>
-                            <TextField
-                                fullWidth
-                                label="Rua"
-                                name="address.street"
-                                value={userForm.address.street}
-                                onChange={handleFormInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={3}>
-                            <TextField
-                                fullWidth
-                                label="Número"
-                                name="address.number"
-                                value={userForm.address.number}
-                                onChange={handleFormInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField
-                                fullWidth
-                                label="Bairro"
-                                name="address.neighborhood"
-                                value={userForm.address.neighborhood}
-                                onChange={handleFormInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField
-                                fullWidth
-                                label="Cidade"
-                                name="address.city"
-                                value={userForm.address.city}
-                                onChange={handleFormInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={2}>
-                            <TextField
-                                fullWidth
-                                label="Estado"
-                                name="address.state"
-                                value={userForm.address.state}
-                                onChange={handleFormInputChange}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={2}>
-                            <TextField
-                                fullWidth
-                                label="CEP"
-                                name="address.zipCode"
-                                value={userForm.address.zipCode}
-                                onChange={handleFormInputChange}
-                            />
-                        </Grid>
-                    </>
-                )}
-            </Grid>
+            <Chip
+                icon={icon}
+                label={label}
+                size={isExtraSmall ? "small" : "medium"}
+                color={color}
+            />
         );
     };
 
-    // Obtém o ícone adequado para o perfil
-    const getRoleIcon = (role: string) => {
-        switch (role) {
-            case 'admin':
-                return <Person />;
-            case 'professional':
-                return <MedicalServices />;
-            case 'patient':
-                return <HealthAndSafety />;
-            default:
-                return <Person />;
-        }
+    const renderStatusCell = (status: string) => {
+        const isActive = status === 'active';
+
+        return (
+            <Chip
+                icon={isActive ? <Person /> : <PersonOff />}
+                label={isActive ? 'Ativo' : 'Inativo'}
+                size={isExtraSmall ? "small" : "medium"}
+                color={isActive ? "success" : "error"}
+            />
+        );
     };
 
-    // Obtém o texto do perfil
-    const getRoleText = (role: string) => {
-        switch (role) {
-            case 'admin':
-                return 'Administrador';
-            case 'professional':
-                return 'Profissional';
-            case 'patient':
-                return 'Paciente';
-            default:
-                return role;
-        }
-    };
+    // Renderização do formulário de usuário baseado no tipo selecionado
+    const renderUserDialogContent = () => {
+        return (
+            <>
+                <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            required
+                            label="Nome Completo"
+                            name="name"
+                            value={userForm.name || ''}
+                            onChange={handleFormInputChange}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            required
+                            label="Email"
+                            type="email"
+                            name="email"
+                            value={userForm.email || ''}
+                            onChange={handleFormInputChange}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            label="Telefone"
+                            name="phone"
+                            value={userForm.phone || ''}
+                            onChange={handleFormInputChange}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <FormControl fullWidth>
+                            <InputLabel id="user-role-label">Perfil</InputLabel>
+                            <Select
+                                labelId="user-role-label"
+                                id="user-role"
+                                name="role"
+                                value={userForm.role || 'patient'}
+                                onChange={handleFormInputChange}
+                                label="Perfil"
+                            >
+                                <MenuItem value="patient">Paciente</MenuItem>
+                                <MenuItem value="professional">Profissional de Saúde</MenuItem>
+                                <MenuItem value="admin">Administrador</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <FormControl fullWidth>
+                            <InputLabel id="user-status-label">Status</InputLabel>
+                            <Select
+                                labelId="user-status-label"
+                                id="user-status"
+                                name="status"
+                                value={userForm.status || 'active'}
+                                onChange={handleFormInputChange}
+                                label="Status"
+                            >
+                                <MenuItem value="active">Ativo</MenuItem>
+                                <MenuItem value="inactive">Inativo</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
 
-    // Obtém o texto do status
-    const getStatusText = (status: string) => {
-        return status === 'active' ? 'Ativo' : 'Inativo';
+                    {/* Campos específicos para Profissional de Saúde */}
+                    {userForm.role === 'professional' && (
+                        <>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Especialidade"
+                                    name="specialty"
+                                    value={userForm.specialty || ''}
+                                    onChange={handleFormInputChange}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="CRM/Registro Profissional"
+                                    name="crm"
+                                    value={userForm.crm || ''}
+                                    onChange={handleFormInputChange}
+                                />
+                            </Grid>
+                        </>
+                    )}
+
+                    {/* Campos específicos para Pacientes */}
+                    {userForm.role === 'patient' && (
+                        <>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    type="date"
+                                    label="Data de Nascimento"
+                                    name="birthDate"
+                                    value={userForm.birthDate || ''}
+                                    onChange={handleFormInputChange}
+                                    InputLabelProps={{ shrink: true }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel id="user-gender-label">Gênero</InputLabel>
+                                    <Select
+                                        labelId="user-gender-label"
+                                        id="user-gender"
+                                        name="gender"
+                                        value={userForm.gender || ''}
+                                        onChange={handleFormInputChange}
+                                        label="Gênero"
+                                    >
+                                        <MenuItem value="male">Masculino</MenuItem>
+                                        <MenuItem value="female">Feminino</MenuItem>
+                                        <MenuItem value="other">Outro</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} sm={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel id="user-blood-label">Tipo Sanguíneo</InputLabel>
+                                    <Select
+                                        labelId="user-blood-label"
+                                        id="user-blood"
+                                        name="bloodType"
+                                        value={userForm.bloodType || ''}
+                                        onChange={handleFormInputChange}
+                                        label="Tipo Sanguíneo"
+                                    >
+                                        <MenuItem value="A+">A+</MenuItem>
+                                        <MenuItem value="A-">A-</MenuItem>
+                                        <MenuItem value="B+">B+</MenuItem>
+                                        <MenuItem value="B-">B-</MenuItem>
+                                        <MenuItem value="AB+">AB+</MenuItem>
+                                        <MenuItem value="AB-">AB-</MenuItem>
+                                        <MenuItem value="O+">O+</MenuItem>
+                                        <MenuItem value="O-">O-</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        </>
+                    )}
+                </Grid>
+            </>
+        );
     };
 
     return (
-        <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" gutterBottom>
-                    Gerenciamento de Usuários
-                </Typography>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    startIcon={<PersonAdd />}
-                    onClick={handleOpenAddUserDialog}
-                >
-                    Novo Usuário
-                </Button>
-            </Box>
+        <Container maxWidth="xl" sx={{ py: 3 }}>
+            <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+                    <Typography variant={isSmall ? 'h5' : 'h4'} component="h1" sx={{ fontWeight: 'bold', mb: { xs: 1, sm: 0 } }}>
+                        Gerenciamento de Usuários
+                    </Typography>
 
-            <Paper sx={{ mb: 4 }}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<PersonAdd />}
+                        onClick={() => handleOpenDialog()}
+                        size={isSmall ? "small" : "medium"}
+                    >
+                        Novo Usuário
+                    </Button>
+                </Box>
+
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid item xs={12} md={6}>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            placeholder="Buscar por nome, email ou telefone..."
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Search />
+                                    </InputAdornment>
+                                ),
+                            }}
+                            size={isSmall ? "small" : "medium"}
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <FilterAlt sx={{ mr: 1, color: 'primary.main' }} />
+                            <Typography variant="body2" sx={{ mr: 2 }}>Filtros:</Typography>
+                            <Chip
+                                label={`Total: ${filteredUsers.length}`}
+                                color="default"
+                                size={isSmall ? "small" : "medium"}
+                                sx={{ mr: 1 }}
+                            />
+                        </Box>
+                    </Grid>
+                </Grid>
+
                 <Tabs
                     value={tabValue}
                     onChange={handleTabChange}
-                    variant="fullWidth"
                     indicatorColor="primary"
                     textColor="primary"
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
                 >
                     <Tab label="Todos" />
                     <Tab label="Pacientes" />
                     <Tab label="Profissionais" />
                     <Tab label="Administradores" />
+                    <Tab label="Ativos" />
+                    <Tab label="Inativos" />
                 </Tabs>
 
-                <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <TextField
-                        placeholder="Buscar por nome, email ou especialidade..."
-                        variant="outlined"
-                        size="small"
-                        value={searchTerm}
-                        onChange={handleSearchChange}
-                        sx={{ width: '100%', maxWidth: 500 }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Search />
-                                </InputAdornment>
-                            ),
-                        }}
-                    />
-                    <Box sx={{ display: 'flex', ml: 2 }}>
-                        <Button
-                            startIcon={<FilterList />}
-                            onClick={handleOpenFilterMenu}
-                            variant="outlined"
-                        >
-                            Filtros
-                        </Button>
-                        <Menu
-                            anchorEl={filterMenuAnchorEl}
-                            open={Boolean(filterMenuAnchorEl)}
-                            onClose={handleCloseFilterMenu}
-                        >
-                            <MenuItem onClick={() => handleFilterByStatus('all')}>
-                                Todos os Status
-                            </MenuItem>
-                            <MenuItem onClick={() => handleFilterByStatus('active')}>
-                                Apenas Ativos
-                            </MenuItem>
-                            <MenuItem onClick={() => handleFilterByStatus('inactive')}>
-                                Apenas Inativos
-                            </MenuItem>
-                        </Menu>
-                    </Box>
-                </Box>
-
-                {loading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                        <CircularProgress />
-                    </Box>
-                ) : (
-                    <>
-                        <TableContainer>
-                            <Table size="medium">
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Nome</TableCell>
-                                        <TableCell>E-mail</TableCell>
-                                        <TableCell>Telefone</TableCell>
-                                        <TableCell>Perfil</TableCell>
-                                        <TableCell>Status</TableCell>
-                                        <TableCell>Data de Cadastro</TableCell>
-                                        <TableCell align="right">Ações</TableCell>
+                <TableContainer>
+                    <Table sx={{ minWidth: 650 }} size={isSmall ? "small" : "medium"}>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Nome</TableCell>
+                                <TableCell>Email</TableCell>
+                                {!isExtraSmall && <TableCell>Telefone</TableCell>}
+                                <TableCell>Perfil</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell align="right">Ações</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {filteredUsers
+                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                .map((user) => (
+                                    <TableRow key={user.id}>
+                                        <TableCell component="th" scope="row">
+                                            {user.name}
+                                        </TableCell>
+                                        <TableCell>{user.email}</TableCell>
+                                        {!isExtraSmall && <TableCell>{user.phone || '-'}</TableCell>}
+                                        <TableCell>{renderRoleCell(user.role)}</TableCell>
+                                        <TableCell>{renderStatusCell(user.status)}</TableCell>
+                                        <TableCell align="right">
+                                            <Tooltip title="Ver Detalhes">
+                                                <IconButton
+                                                    size={isExtraSmall ? "small" : "medium"}
+                                                    onClick={() => handleViewUserDetails(user.id)}
+                                                >
+                                                    <Visibility />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Editar">
+                                                <IconButton
+                                                    size={isExtraSmall ? "small" : "medium"}
+                                                    color="primary"
+                                                    onClick={() => handleOpenDialog(true, user.id)}
+                                                >
+                                                    <Edit />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Excluir">
+                                                <IconButton
+                                                    size={isExtraSmall ? "small" : "medium"}
+                                                    color="error"
+                                                    onClick={() => handleDeleteConfirm(user.id)}
+                                                >
+                                                    <Delete />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </TableCell>
                                     </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {filteredUsers.length > 0 ? (
-                                        filteredUsers
-                                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                            .map((user) => (
-                                                <TableRow key={user.id} hover>
-                                                    <TableCell>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                            <Avatar sx={{ mr: 2, bgcolor: user.role === 'admin' ? 'primary.main' : user.role === 'professional' ? 'secondary.main' : 'success.main' }}>
-                                                                {user.name.charAt(0)}
-                                                            </Avatar>
-                                                            <Typography variant="body2">
-                                                                {user.name}
-                                                            </Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                            <Mail fontSize="small" sx={{ mr: 1, opacity: 0.6 }} />
-                                                            <Typography variant="body2">
-                                                                {user.email}
-                                                            </Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                            <Phone fontSize="small" sx={{ mr: 1, opacity: 0.6 }} />
-                                                            <Typography variant="body2">
-                                                                {user.phone || 'Não informado'}
-                                                            </Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Chip
-                                                            icon={getRoleIcon(user.role)}
-                                                            label={getRoleText(user.role)}
-                                                            size="small"
-                                                            color={
-                                                                user.role === 'admin'
-                                                                    ? 'primary'
-                                                                    : user.role === 'professional'
-                                                                        ? 'secondary'
-                                                                        : 'success'
-                                                            }
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Chip
-                                                            label={getStatusText(user.status)}
-                                                            size="small"
-                                                            color={user.status === 'active' ? 'success' : 'error'}
-                                                            variant="outlined"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                            <CalendarMonth fontSize="small" sx={{ mr: 1, opacity: 0.6 }} />
-                                                            <Typography variant="body2">
-                                                                {format(new Date(user.createdAt), 'dd/MM/yyyy')}
-                                                            </Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={(e) => {
-                                                                handleOpenActionMenu(e, user.id);
-                                                                setSelectedUser(user);
-                                                            }}
-                                                        >
-                                                            <MoreVert />
-                                                        </IconButton>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                                                <Typography variant="body1" color="text.secondary">
-                                                    Nenhum usuário encontrado
-                                                </Typography>
-                                                {searchTerm && (
-                                                    <Button
-                                                        variant="text"
-                                                        onClick={() => setSearchTerm('')}
-                                                        sx={{ mt: 1 }}
-                                                    >
-                                                        Limpar busca
-                                                    </Button>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
+                                ))}
+                            {filteredUsers.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center">
+                                        <Typography variant="body1" sx={{ py: 2 }}>
+                                            Nenhum usuário encontrado.
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
 
-                        <TablePagination
-                            rowsPerPageOptions={[5, 10, 25]}
-                            component="div"
-                            count={filteredUsers.length}
-                            rowsPerPage={rowsPerPage}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            onRowsPerPageChange={handleChangeRowsPerPage}
-                            labelRowsPerPage="Linhas por página:"
-                            labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-                        />
-                    </>
-                )}
+                <TablePagination
+                    rowsPerPageOptions={[5, 10, 25]}
+                    component="div"
+                    count={filteredUsers.length}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage="Linhas por página:"
+                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+                />
             </Paper>
 
-            {/* Menu de Ações */}
-            <Menu
-                anchorEl={actionMenuAnchorEl}
-                open={Boolean(actionMenuAnchorEl)}
-                onClose={handleCloseActionMenu}
-            >
-                <MenuItem
-                    onClick={() => {
-                        handleOpenEditUserDialog(selectedUser!);
-                        handleCloseActionMenu();
-                    }}
-                >
-                    <Edit fontSize="small" sx={{ mr: 1 }} />
-                    Editar
-                </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                        handleOpenDeleteDialog(selectedUser!);
-                        handleCloseActionMenu();
-                    }}
-                >
-                    <Delete fontSize="small" sx={{ mr: 1 }} />
-                    Excluir
-                </MenuItem>
-            </Menu>
-
-            {/* Modal para adicionar/editar usuário */}
-            <Dialog
-                open={openUserDialog}
-                onClose={handleCloseUserDialog}
-                maxWidth="md"
-                fullWidth
-            >
+            {/* Dialog para adicionar/editar usuário */}
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
                 <DialogTitle>
-                    {selectedUser ? 'Editar Usuário' : 'Novo Usuário'}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {isEdit ? 'Editar Usuário' : 'Adicionar Novo Usuário'}
+                        <IconButton onClick={handleCloseDialog}>
+                            <Close />
+                        </IconButton>
+                    </Box>
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent dividers>
                     {renderUserDialogContent()}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseUserDialog} color="inherit">
-                        Cancelar
-                    </Button>
+                    <Button variant="outlined" onClick={handleCloseDialog}>Cancelar</Button>
                     <Button
-                        onClick={handleSaveUser}
                         variant="contained"
                         color="primary"
-                        disabled={loading}
+                        onClick={handleSubmitUser}
+                        disabled={!userForm.name || !userForm.email}
                     >
-                        {loading ? <CircularProgress size={24} /> : 'Salvar'}
+                        {isEdit ? 'Atualizar' : 'Salvar'}
                     </Button>
                 </DialogActions>
             </Dialog>
 
-            {/* Modal de confirmação de exclusão */}
-            <Dialog
-                open={deleteDialogOpen}
-                onClose={handleCloseDeleteDialog}
-            >
-                <DialogTitle>
-                    Confirmar Exclusão
-                </DialogTitle>
+            {/* Dialog de confirmação de exclusão */}
+            <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+                <DialogTitle>Confirmar Exclusão</DialogTitle>
                 <DialogContent>
-                    <Typography>
-                        Tem certeza que deseja excluir o usuário <strong>{selectedUser?.name}</strong>?
-                    </Typography>
-                    <Typography variant="body2" color="error" sx={{ mt: 2 }}>
-                        Esta ação não pode ser desfeita.
-                    </Typography>
+                    <DialogContentText>
+                        Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.
+                    </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDeleteDialog} color="inherit">
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={handleDeleteUser}
-                        variant="contained"
-                        color="error"
-                        disabled={loading}
-                    >
-                        {loading ? <CircularProgress size={24} /> : 'Excluir'}
+                    <Button variant="outlined" onClick={() => setDeleteConfirmOpen(false)}>Cancelar</Button>
+                    <Button variant="contained" color="error" onClick={handleDeleteUser}>
+                        Excluir
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {/* Snackbar para mensagens */}
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={5000}
-                onClose={handleCloseSnackbar}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            >
-                <Alert
-                    onClose={handleCloseSnackbar}
-                    severity={snackbar.severity}
-                    sx={{ width: '100%' }}
-                    variant="filled"
-                >
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
-        </Box>
+        </Container>
     );
 };
 
-export default AdminUserManagement; 
+export default UserManagement; 

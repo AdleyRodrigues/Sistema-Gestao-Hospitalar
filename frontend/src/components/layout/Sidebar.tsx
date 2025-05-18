@@ -53,15 +53,15 @@ const menuItems = {
     ],
     professional: [
         { text: 'Dashboard', icon: <Dashboard />, path: '/professional/dashboard', implemented: true },
-        { text: 'Agenda', icon: <CalendarMonth />, path: '/professional/schedule', implemented: false },
+        { text: 'Agenda', icon: <CalendarMonth />, path: '/professional/schedule', implemented: true },
         { text: 'Prontuários', icon: <Assignment />, path: '/professional/records', implemented: false },
-        { text: 'Pacientes', icon: <Person />, path: '/professional/patients', implemented: false },
+        { text: 'Pacientes', icon: <Person />, path: '/professional/patients', implemented: true },
         { text: 'Telemedicina', icon: <VideoCall />, path: '/professional/telemedicine', implemented: false },
         { text: 'Configurações de Privacidade', icon: <PrivacyTip />, path: '/professional/privacy-settings', implemented: true },
     ],
     admin: [
         { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard', implemented: true },
-        { text: 'Usuários', icon: <Person />, path: '/admin/users', implemented: false },
+        { text: 'Usuários', icon: <Person />, path: '/admin/users', implemented: true },
         { text: 'Hospitais', icon: <Business />, path: '/admin/hospitals', implemented: false },
         { text: 'Profissionais', icon: <Group />, path: '/admin/professionals', implemented: false },
         { text: 'Configurações', icon: <Settings />, path: '/admin/settings', implemented: false },

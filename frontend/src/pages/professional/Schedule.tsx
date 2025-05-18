@@ -1,255 +1,741 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../hooks/useAuth';
 import {
     Box,
-    Typography,
-    Paper,
-    Grid,
     Button,
     Card,
     CardContent,
-    Divider,
     Chip,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    FormControl,
+    Grid,
+    IconButton,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    Tab,
     Tabs,
-    Tab
+    TextField,
+    Typography,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
 import {
+    ArrowBack,
+    ArrowForward,
     CalendarMonth,
-    Today,
+    CheckCircle,
+    Close,
+    Delete,
+    Edit,
     Event,
-    AccessTime,
+    EventAvailable,
+    EventBusy,
     Person,
-    Add
+    VideoCall,
+    Visibility
 } from '@mui/icons-material';
+import { api } from '../../services/api';
+import { format, addDays, startOfWeek, endOfWeek, addWeeks, subWeeks, isToday, isSameDay, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-const Schedule = () => {
-    const [selectedTab, setSelectedTab] = useState(0);
+// Interface para as consultas
+interface Appointment {
+    id: string;
+    patientId: string;
+    professionalId: string;
+    date: string;
+    status: 'scheduled' | 'completed' | 'canceled';
+    type: 'consultation' | 'return' | 'telemedicine';
+    notes: string;
+    patientName?: string;
+}
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setSelectedTab(newValue);
+// Interface para pacientes
+interface Patient {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    birthDate?: string;
+    gender?: string;
+}
+
+const ProfessionalSchedule = () => {
+    const { user } = useAuth();
+    const theme = useTheme();
+    const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+    const isExtraSmall = useMediaQuery('(max-width:400px)');
+
+    // Estados para controle da visualização
+    const [tabValue, setTabValue] = useState(0);  // 0: Diário, 1: Semanal, 2: Mensal
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [weekStart, setWeekStart] = useState(startOfWeek(currentDate, { weekStartsOn: 1 }));
+    const [weekEnd, setWeekEnd] = useState(endOfWeek(currentDate, { weekStartsOn: 1 }));
+
+    // Estados para os dados
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [patients, setPatients] = useState<Patient[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Estados para diálogos
+    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+    const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+    const [openEditDialog, setOpenEditDialog] = useState(false);
+    const [openCancelDialog, setOpenCancelDialog] = useState(false);
+
+    // Estado para edição de consulta
+    const [appointmentForm, setAppointmentForm] = useState({
+        date: '',
+        status: '',
+        notes: ''
+    });
+
+    // Carregar dados necessários
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!user) return;
+
+            setLoading(true);
+            setError(null);
+
+            try {
+                // Buscar consultas do profissional
+                const appointmentsResponse = await api.get(`/appointments?professionalId=${user.id}`);
+
+                // Buscar dados de pacientes para exibir seus nomes
+                const patientsResponse = await api.get('/patients');
+
+                if (appointmentsResponse.data && Array.isArray(appointmentsResponse.data)) {
+                    // Enriquecer dados das consultas com nomes de pacientes
+                    const patientMap = new Map();
+                    if (patientsResponse.data && Array.isArray(patientsResponse.data)) {
+                        patientsResponse.data.forEach((patient: Patient) => {
+                            patientMap.set(patient.id, patient);
+                        });
+                        setPatients(patientsResponse.data);
+                    }
+
+                    // Adicionar nome do paciente a cada consulta
+                    const enrichedAppointments = appointmentsResponse.data.map((appointment: Appointment) => {
+                        const patient = patientMap.get(appointment.patientId);
+                        return {
+                            ...appointment,
+                            patientName: patient ? patient.name : 'Paciente não encontrado'
+                        };
+                    });
+
+                    setAppointments(enrichedAppointments);
+                }
+            } catch (err) {
+                console.error('Erro ao buscar dados da agenda:', err);
+                setError('Erro ao carregar agenda. Por favor, tente novamente mais tarde.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [user]);
+
+    // Atualizar datas da semana ao mudar a data atual
+    useEffect(() => {
+        setWeekStart(startOfWeek(currentDate, { weekStartsOn: 1 }));
+        setWeekEnd(endOfWeek(currentDate, { weekStartsOn: 1 }));
+    }, [currentDate]);
+
+    // Manipuladores de eventos
+    const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+        setTabValue(newValue);
     };
 
-    // Dados mockados de consultas
-    const todayAppointments = [
-        { id: 1, time: '08:30', patient: 'João Silva', type: 'Consulta', status: 'Confirmado' },
-        { id: 2, time: '09:15', patient: 'Maria Oliveira', type: 'Retorno', status: 'Confirmado' },
-        { id: 3, time: '10:00', patient: 'Pedro Santos', type: 'Telemedicina', status: 'Pendente' },
-        { id: 4, time: '11:30', patient: 'Ana Pereira', type: 'Consulta', status: 'Confirmado' },
-        { id: 5, time: '14:00', patient: 'Carlos Ferreira', type: 'Exame', status: 'Confirmado' },
-        { id: 6, time: '15:30', patient: 'Lucia Mendes', type: 'Consulta', status: 'Cancelado' },
-    ];
+    const handleNextPeriod = () => {
+        if (tabValue === 0) {
+            // Próximo dia
+            setCurrentDate(prev => addDays(prev, 1));
+        } else if (tabValue === 1) {
+            // Próxima semana
+            setCurrentDate(prev => addWeeks(prev, 1));
+        }
+        // Para o modo mensal, seria implementado o próximo mês
+    };
 
-    const weekAppointments = [
-        { id: 1, date: '22/04/2025', time: '08:30', patient: 'João Silva', type: 'Consulta' },
-        { id: 2, date: '22/04/2025', time: '14:00', patient: 'Maria Oliveira', type: 'Retorno' },
-        { id: 3, date: '23/04/2025', time: '09:00', patient: 'Pedro Santos', type: 'Telemedicina' },
-        { id: 4, date: '23/04/2025', time: '16:30', patient: 'Ana Pereira', type: 'Consulta' },
-        { id: 5, date: '24/04/2025', time: '10:00', patient: 'Carlos Ferreira', type: 'Exame' },
-        { id: 6, date: '25/04/2025', time: '14:30', patient: 'Lucia Mendes', type: 'Consulta' },
-    ];
+    const handlePreviousPeriod = () => {
+        if (tabValue === 0) {
+            // Dia anterior
+            setCurrentDate(prev => addDays(prev, -1));
+        } else if (tabValue === 1) {
+            // Semana anterior
+            setCurrentDate(prev => subWeeks(prev, 1));
+        }
+        // Para o modo mensal, seria implementado o mês anterior
+    };
 
-    return (
-        <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4">
-                    Agenda
-                </Typography>
-                <Button variant="contained" startIcon={<Add />}>
-                    Nova Consulta
-                </Button>
-            </Box>
+    const handleToday = () => {
+        setCurrentDate(new Date());
+    };
 
-            <Paper elevation={2} sx={{ p: 0, mb: 3 }}>
-                <Tabs
-                    value={selectedTab}
-                    onChange={handleTabChange}
-                    variant="fullWidth"
-                >
-                    <Tab icon={<Today />} label="HOJE" />
-                    <Tab icon={<CalendarMonth />} label="SEMANA" />
-                    <Tab icon={<Event />} label="MÊS" />
-                </Tabs>
+    const handleOpenDetails = (appointment: Appointment) => {
+        setSelectedAppointment(appointment);
+        setOpenDetailsDialog(true);
+    };
 
-                <Box sx={{ p: 3 }}>
-                    {selectedTab === 0 && (
-                        <>
-                            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-                                <Today sx={{ mr: 1, color: 'primary.main' }} />
-                                <Typography variant="h6">
-                                    Consultas de Hoje
-                                </Typography>
-                            </Box>
-                            <TableContainer>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Horário</TableCell>
-                                            <TableCell>Paciente</TableCell>
-                                            <TableCell>Tipo</TableCell>
-                                            <TableCell>Status</TableCell>
-                                            <TableCell align="right">Ações</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {todayAppointments.map((appointment) => (
-                                            <TableRow key={appointment.id}>
-                                                <TableCell>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                        <AccessTime fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                                                        {appointment.time}
-                                                    </Box>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                        <Person fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                                                        {appointment.patient}
-                                                    </Box>
-                                                </TableCell>
-                                                <TableCell>{appointment.type}</TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        size="small"
-                                                        label={appointment.status}
-                                                        color={
-                                                            appointment.status === 'Confirmado'
-                                                                ? 'success'
-                                                                : appointment.status === 'Pendente'
-                                                                    ? 'warning'
-                                                                    : 'error'
-                                                        }
-                                                    />
-                                                </TableCell>
-                                                <TableCell align="right">
-                                                    <Button size="small" variant="contained" sx={{ mr: 1 }}>
-                                                        Atender
-                                                    </Button>
-                                                    <Button size="small" variant="outlined">
-                                                        Editar
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        </>
-                    )}
+    const handleOpenEdit = (appointment: Appointment) => {
+        setSelectedAppointment(appointment);
+        setAppointmentForm({
+            date: appointment.date,
+            status: appointment.status,
+            notes: appointment.notes
+        });
+        setOpenEditDialog(true);
+    };
 
-                    {selectedTab === 1 && (
-                        <>
-                            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-                                <CalendarMonth sx={{ mr: 1, color: 'primary.main' }} />
-                                <Typography variant="h6">
-                                    Consultas da Semana
-                                </Typography>
-                            </Box>
-                            <TableContainer>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Data</TableCell>
-                                            <TableCell>Horário</TableCell>
-                                            <TableCell>Paciente</TableCell>
-                                            <TableCell>Tipo</TableCell>
-                                            <TableCell align="right">Ações</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {weekAppointments.map((appointment) => (
-                                            <TableRow key={appointment.id}>
-                                                <TableCell>{appointment.date}</TableCell>
-                                                <TableCell>{appointment.time}</TableCell>
-                                                <TableCell>{appointment.patient}</TableCell>
-                                                <TableCell>{appointment.type}</TableCell>
-                                                <TableCell align="right">
-                                                    <Button size="small" variant="outlined" sx={{ mr: 1 }}>
-                                                        Detalhes
-                                                    </Button>
-                                                    <Button size="small" variant="outlined" color="error">
-                                                        Cancelar
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        </>
-                    )}
+    const handleOpenCancel = (appointment: Appointment) => {
+        setSelectedAppointment(appointment);
+        setOpenCancelDialog(true);
+    };
 
-                    {selectedTab === 2 && (
+    const handleCloseDetails = () => {
+        setOpenDetailsDialog(false);
+    };
+
+    const handleCloseEdit = () => {
+        setOpenEditDialog(false);
+    };
+
+    const handleCloseCancel = () => {
+        setOpenCancelDialog(false);
+    };
+
+    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+        const { name, value } = e.target;
+        if (name) {
+            setAppointmentForm(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+    };
+
+    const handleUpdateAppointment = async () => {
+        if (!selectedAppointment) return;
+
+        try {
+            // Atualizar a consulta
+            const updatedAppointment = {
+                ...selectedAppointment,
+                date: appointmentForm.date,
+                status: appointmentForm.status,
+                notes: appointmentForm.notes
+            };
+
+            await api.put(`/appointments/${selectedAppointment.id}`, updatedAppointment);
+
+            // Atualizar estado local
+            setAppointments(prev =>
+                prev.map(app =>
+                    app.id === selectedAppointment.id ? updatedAppointment : app
+                )
+            );
+
+            handleCloseEdit();
+            alert('Consulta atualizada com sucesso!');
+        } catch (error) {
+            console.error('Erro ao atualizar consulta:', error);
+            alert('Erro ao atualizar consulta. Por favor, tente novamente.');
+        }
+    };
+
+    const handleCancelAppointment = async () => {
+        if (!selectedAppointment) return;
+
+        try {
+            // Atualizar status da consulta para cancelada
+            const canceledAppointment = {
+                ...selectedAppointment,
+                status: 'canceled'
+            };
+
+            await api.put(`/appointments/${selectedAppointment.id}`, canceledAppointment);
+
+            // Atualizar estado local
+            setAppointments(prev =>
+                prev.map(app =>
+                    app.id === selectedAppointment.id ? canceledAppointment : app
+                )
+            );
+
+            handleCloseCancel();
+            alert('Consulta cancelada com sucesso!');
+        } catch (error) {
+            console.error('Erro ao cancelar consulta:', error);
+            alert('Erro ao cancelar consulta. Por favor, tente novamente.');
+        }
+    };
+
+    // Auxiliares para renderização de status e tipo
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'scheduled': return 'Agendada';
+            case 'completed': return 'Realizada';
+            case 'canceled': return 'Cancelada';
+            default: return status;
+        }
+    };
+
+    const getTypeLabel = (type: string) => {
+        switch (type) {
+            case 'consultation': return 'Consulta';
+            case 'return': return 'Retorno';
+            case 'telemedicine': return 'Telemedicina';
+            default: return type;
+        }
+    };
+
+    // Filtrar consultas para o dia atual 
+    const getAppointmentsForDay = (date: Date) => {
+        return appointments.filter(appointment => {
+            const appointmentDate = parseISO(appointment.date);
+            return isSameDay(appointmentDate, date);
+        }).sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateA.getTime() - dateB.getTime();
+        });
+    };
+
+    // Renderizações condicionais com base no modo de visualização
+    const renderDayView = () => {
+        const today = currentDate;
+        const todayAppointments = getAppointmentsForDay(today);
+
+        return (
+            <Card elevation={2}>
+                <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                        {format(currentDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                        {isToday(currentDate) && (
+                            <Chip
+                                label="Hoje"
+                                color="primary"
+                                size="small"
+                                sx={{ ml: 2, fontWeight: 'bold' }}
+                            />
+                        )}
+                    </Typography>
+
+                    <Divider sx={{ mb: 2 }} />
+
+                    {todayAppointments.length === 0 ? (
                         <Box sx={{ textAlign: 'center', py: 4 }}>
-                            <Typography variant="h6" color="text.secondary">
-                                Visualização mensal em desenvolvimento
-                            </Typography>
-                            <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-                                Em breve você poderá visualizar e gerenciar sua agenda mensal completa.
+                            <EventBusy sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.5 }} />
+                            <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+                                Nenhuma consulta agendada para este dia
                             </Typography>
                         </Box>
+                    ) : (
+                        <Grid container spacing={2}>
+                            {todayAppointments.map((appointment) => (
+                                <Grid item xs={12} key={appointment.id}>
+                                    <Paper
+                                        elevation={1}
+                                        sx={{
+                                            p: 2,
+                                            borderLeft: '4px solid',
+                                            borderColor: appointment.status === 'canceled'
+                                                ? 'error.main'
+                                                : appointment.status === 'completed'
+                                                    ? 'success.main'
+                                                    : appointment.type === 'telemedicine'
+                                                        ? 'info.main'
+                                                        : 'primary.main',
+                                            opacity: appointment.status === 'canceled' ? 0.7 : 1
+                                        }}
+                                    >
+                                        <Grid container spacing={2} alignItems="center">
+                                            <Grid item xs={12} sm={3}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Horário
+                                                </Typography>
+                                                <Typography variant="body1" fontWeight="bold">
+                                                    {format(new Date(appointment.date), 'HH:mm')}
+                                                </Typography>
+                                            </Grid>
+                                            <Grid item xs={12} sm={4}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Paciente
+                                                </Typography>
+                                                <Typography variant="body1">
+                                                    {appointment.patientName}
+                                                </Typography>
+                                            </Grid>
+                                            <Grid item xs={6} sm={2}>
+                                                <Chip
+                                                    label={getTypeLabel(appointment.type)}
+                                                    size="small"
+                                                    color={appointment.type === 'telemedicine' ? 'info' : 'primary'}
+                                                    icon={appointment.type === 'telemedicine' ? <VideoCall /> : <Event />}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={6} sm={3} sx={{ textAlign: 'right' }}>
+                                                <IconButton
+                                                    color="primary"
+                                                    onClick={() => handleOpenDetails(appointment)}
+                                                    size={isExtraSmall ? "small" : "medium"}
+                                                >
+                                                    <Visibility />
+                                                </IconButton>
+
+                                                {appointment.status === 'scheduled' && (
+                                                    <>
+                                                        <IconButton
+                                                            color="secondary"
+                                                            onClick={() => handleOpenEdit(appointment)}
+                                                            size={isExtraSmall ? "small" : "medium"}
+                                                        >
+                                                            <Edit />
+                                                        </IconButton>
+                                                        <IconButton
+                                                            color="error"
+                                                            onClick={() => handleOpenCancel(appointment)}
+                                                            size={isExtraSmall ? "small" : "medium"}
+                                                        >
+                                                            <Delete />
+                                                        </IconButton>
+                                                    </>
+                                                )}
+                                            </Grid>
+                                        </Grid>
+                                    </Paper>
+                                </Grid>
+                            ))}
+                        </Grid>
                     )}
+                </CardContent>
+            </Card>
+        );
+    };
+
+    return (
+        <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+            <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap' }}>
+                    <Typography variant={isSmall ? 'h5' : 'h4'} component="h1" sx={{ fontWeight: 'bold', mb: { xs: 1, sm: 0 } }}>
+                        Minha Agenda
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                            variant="outlined"
+                            onClick={handleToday}
+                            size={isSmall ? "small" : "medium"}
+                        >
+                            Hoje
+                        </Button>
+                    </Box>
+                </Box>
+
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                    <Tabs
+                        value={tabValue}
+                        onChange={handleTabChange}
+                        variant="scrollable"
+                        scrollButtons="auto"
+                    >
+                        <Tab label="Diário" icon={<Event />} iconPosition="start" />
+                        <Tab label="Semanal" icon={<CalendarMonth />} iconPosition="start" />
+                        {/* <Tab label="Mensal" icon={<DateRange />} iconPosition="start" /> */}
+                    </Tabs>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <IconButton onClick={handlePreviousPeriod}>
+                        <ArrowBack />
+                    </IconButton>
+
+                    <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+                        {tabValue === 0
+                            ? format(currentDate, "d 'de' MMMM", { locale: ptBR })
+                            : `${format(weekStart, "d 'de' MMMM", { locale: ptBR })} - ${format(weekEnd, "d 'de' MMMM", { locale: ptBR })}`
+                        }
+                    </Typography>
+
+                    <IconButton onClick={handleNextPeriod}>
+                        <ArrowForward />
+                    </IconButton>
                 </Box>
             </Paper>
 
-            <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Estatísticas
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
+            {/* Conteúdo da agenda baseado na visualização selecionada */}
+            {tabValue === 0 && renderDayView()}
+
+            {tabValue === 1 && (
+                <Box sx={{ mb: 2 }}>
+                    <Typography color="textSecondary" align="center" sx={{ mb: 2 }}>
+                        Visualização semanal em implementação...
+                    </Typography>
+                    <Grid container spacing={2}>
+                        {Array.from({ length: 7 }).map((_, index) => {
+                            const day = addDays(weekStart, index);
+                            return (
+                                <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={index}>
+                                    <Paper
+                                        elevation={1}
+                                        sx={{
+                                            p: 2,
+                                            bgcolor: isToday(day) ? 'primary.light' : 'background.paper',
+                                            color: isToday(day) ? 'primary.contrastText' : 'text.primary',
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                            {format(day, 'EEE, d', { locale: ptBR })}
+                                        </Typography>
+                                        <Divider sx={{ mb: 1 }} />
+
+                                        {getAppointmentsForDay(day).length > 0 ? (
+                                            <>
+                                                {getAppointmentsForDay(day).slice(0, 3).map((app) => (
+                                                    <Box
+                                                        key={app.id}
+                                                        sx={{
+                                                            p: 1,
+                                                            mb: 1,
+                                                            bgcolor: isToday(day) ? 'rgba(255,255,255,0.1)' : 'background.default',
+                                                            borderRadius: 1,
+                                                            cursor: 'pointer'
+                                                        }}
+                                                        onClick={() => handleOpenDetails(app)}
+                                                    >
+                                                        <Typography variant="body2" noWrap>
+                                                            {format(new Date(app.date), 'HH:mm')} - {app.patientName}
+                                                        </Typography>
+                                                    </Box>
+                                                ))}
+
+                                                {getAppointmentsForDay(day).length > 3 && (
+                                                    <Typography variant="body2" align="center" sx={{ mt: 1 }}>
+                                                        + {getAppointmentsForDay(day).length - 3} mais
+                                                    </Typography>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 2 }}>
+                                                Sem consultas
+                                            </Typography>
+                                        )}
+                                    </Paper>
+                                </Grid>
+                            );
+                        })}
+                    </Grid>
+                </Box>
+            )}
+
+            {/* Dialog de Detalhes da Consulta */}
+            <Dialog open={openDetailsDialog} onClose={handleCloseDetails} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        Detalhes da Consulta
+                        <IconButton onClick={handleCloseDetails} size="small">
+                            <Close />
+                        </IconButton>
+                    </Box>
+                </DialogTitle>
+                <DialogContent dividers>
+                    {selectedAppointment && (
                         <Grid container spacing={2}>
-                            <Grid item xs={6}>
-                                <Card sx={{ bgcolor: 'primary.light', color: 'white' }}>
-                                    <CardContent>
-                                        <Typography variant="h4">
-                                            32
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            Consultas esta semana
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
+                            <Grid item xs={12} sm={6}>
+                                <Typography variant="subtitle2" color="text.secondary">Paciente</Typography>
+                                <Typography variant="body1" gutterBottom>{selectedAppointment.patientName}</Typography>
+
+                                <Typography variant="subtitle2" color="text.secondary">Data e Hora</Typography>
+                                <Typography variant="body1" gutterBottom>
+                                    {format(new Date(selectedAppointment.date), "dd/MM/yyyy 'às' HH:mm")}
+                                </Typography>
+
+                                <Typography variant="subtitle2" color="text.secondary">Tipo</Typography>
+                                <Chip
+                                    label={getTypeLabel(selectedAppointment.type)}
+                                    size="small"
+                                    color={selectedAppointment.type === 'telemedicine' ? 'info' : 'primary'}
+                                    sx={{ mt: 0.5 }}
+                                />
                             </Grid>
-                            <Grid item xs={6}>
-                                <Card sx={{ bgcolor: 'secondary.light', color: 'white' }}>
-                                    <CardContent>
-                                        <Typography variant="h4">
-                                            6
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            Consultas hoje
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
+
+                            <Grid item xs={12} sm={6}>
+                                <Typography variant="subtitle2" color="text.secondary">Status</Typography>
+                                <Chip
+                                    label={getStatusLabel(selectedAppointment.status)}
+                                    size="small"
+                                    color={
+                                        selectedAppointment.status === 'canceled'
+                                            ? 'error'
+                                            : selectedAppointment.status === 'completed'
+                                                ? 'success'
+                                                : 'primary'
+                                    }
+                                    icon={
+                                        selectedAppointment.status === 'canceled'
+                                            ? <Delete />
+                                            : selectedAppointment.status === 'completed'
+                                                ? <CheckCircle />
+                                                : <EventAvailable />
+                                    }
+                                    sx={{ mt: 0.5 }}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle2" color="text.secondary">Observações</Typography>
+                                <Paper variant="outlined" sx={{ p: 1.5, mt: 0.5, bgcolor: 'background.default' }}>
+                                    <Typography variant="body2">
+                                        {selectedAppointment.notes || 'Sem observações registradas.'}
+                                    </Typography>
+                                </Paper>
                             </Grid>
                         </Grid>
-                    </Paper>
-                </Grid>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDetails} variant="outlined">Fechar</Button>
+                    {selectedAppointment && selectedAppointment.status === 'scheduled' && (
+                        <>
+                            <Button
+                                onClick={() => {
+                                    handleCloseDetails();
+                                    handleOpenEdit(selectedAppointment);
+                                }}
+                                color="primary"
+                                variant="outlined"
+                            >
+                                Editar
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    handleCloseDetails();
+                                    handleOpenCancel(selectedAppointment);
+                                }}
+                                color="error"
+                                variant="contained"
+                            >
+                                Cancelar Consulta
+                            </Button>
+                        </>
+                    )}
+                </DialogActions>
+            </Dialog>
 
-                <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Ações Rápidas
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <Button variant="contained" startIcon={<Add />}>
-                                Adicionar Horário Disponível
-                            </Button>
-                            <Button variant="outlined" startIcon={<Event />}>
-                                Bloquear Período na Agenda
-                            </Button>
+            {/* Dialog de Edição da Consulta */}
+            <Dialog open={openEditDialog} onClose={handleCloseEdit} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        Editar Consulta
+                        <IconButton onClick={handleCloseEdit} size="small">
+                            <Close />
+                        </IconButton>
+                    </Box>
+                </DialogTitle>
+                <DialogContent dividers>
+                    {selectedAppointment && (
+                        <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle1" gutterBottom>
+                                    Consulta de {selectedAppointment.patientName}
+                                </Typography>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="Data e Hora"
+                                    type="datetime-local"
+                                    name="date"
+                                    value={appointmentForm.date ? appointmentForm.date.slice(0, 16) : ''}
+                                    onChange={handleFormChange}
+                                    fullWidth
+                                    InputLabelProps={{
+                                        shrink: true,
+                                    }}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Status</InputLabel>
+                                    <Select
+                                        name="status"
+                                        value={appointmentForm.status}
+                                        label="Status"
+                                        onChange={handleFormChange}
+                                    >
+                                        <MenuItem value="scheduled">Agendada</MenuItem>
+                                        <MenuItem value="completed">Realizada</MenuItem>
+                                        <MenuItem value="canceled">Cancelada</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                <TextField
+                                    label="Observações"
+                                    name="notes"
+                                    value={appointmentForm.notes}
+                                    onChange={handleFormChange}
+                                    fullWidth
+                                    multiline
+                                    rows={4}
+                                />
+                            </Grid>
+                        </Grid>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseEdit} variant="outlined">Cancelar</Button>
+                    <Button onClick={handleUpdateAppointment} variant="contained" color="primary">
+                        Salvar Alterações
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog de Cancelamento da Consulta */}
+            <Dialog open={openCancelDialog} onClose={handleCloseCancel} maxWidth="xs" fullWidth>
+                <DialogTitle>
+                    Cancelar Consulta
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" gutterBottom>
+                        Tem certeza que deseja cancelar esta consulta?
+                    </Typography>
+                    {selectedAppointment && (
+                        <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                            <Typography variant="body2">
+                                <strong>Paciente:</strong> {selectedAppointment.patientName}
+                            </Typography>
+                            <Typography variant="body2">
+                                <strong>Data/Hora:</strong> {format(new Date(selectedAppointment.date), "dd/MM/yyyy 'às' HH:mm")}
+                            </Typography>
+                            <Typography variant="body2">
+                                <strong>Tipo:</strong> {getTypeLabel(selectedAppointment.type)}
+                            </Typography>
                         </Box>
-                    </Paper>
-                </Grid>
-            </Grid>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseCancel} variant="outlined">
+                        Não, Manter
+                    </Button>
+                    <Button onClick={handleCancelAppointment} variant="contained" color="error">
+                        Sim, Cancelar
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
 
-export default Schedule; 
+export default ProfessionalSchedule; 
