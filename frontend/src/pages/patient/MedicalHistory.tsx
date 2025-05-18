@@ -1,52 +1,48 @@
-import React, { useState, useEffect } from 'react';
 import {
+    Assignment,
+    CalendarToday,
+    Description,
+    Download,
+    KeyboardArrowDown,
+    KeyboardArrowUp,
+    LocalHospital,
+    MedicalServices,
+    Medication,
+    Print,
+    Search
+} from '@mui/icons-material';
+import {
+    Alert,
+    Avatar,
     Box,
-    Typography,
-    Paper,
-    Tabs,
-    Tab,
-    Grid,
+    Button,
     Card,
     CardContent,
     CardHeader,
-    Divider,
     Chip,
-    Avatar,
-    Button,
-    TextField,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    Grid,
+    IconButton,
     InputAdornment,
     List,
     ListItem,
-    ListItemText,
     ListItemAvatar,
-    CircularProgress,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    IconButton,
-    Alert,
-    Snackbar
+    ListItemText,
+    Paper,
+    Snackbar,
+    Tab,
+    Tabs,
+    TextField,
+    Typography
 } from '@mui/material';
-import {
-    Search,
-    MedicalServices,
-    LocalHospital,
-    Assignment,
-    FilePresent,
-    History,
-    CalendarToday,
-    Medication,
-    Description,
-    Download,
-    Print,
-    FilterList,
-    AccessTime,
-    KeyboardArrowDown,
-    KeyboardArrowUp
-} from '@mui/icons-material';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { api } from '../../services/api';
 import { MedicalRecordEntry, Prescription } from '../../types/medicalRecord';

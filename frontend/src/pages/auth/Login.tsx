@@ -84,7 +84,7 @@ const Login = () => {
             if (!success) {
                 setLoginError('Credenciais inválidas. Tente novamente.');
             }
-        } catch (error) {
+        } catch {
             setLoginError('Ocorreu um erro ao fazer login. Tente novamente.');
         }
     };

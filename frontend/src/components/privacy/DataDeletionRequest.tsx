@@ -23,7 +23,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 
 const DataDeletionRequest = () => {
-    const { user } = useAuth();
+    useAuth();
     const [openDialog, setOpenDialog] = useState(false);
     const [confirmDialog, setConfirmDialog] = useState(false);
     const [deleteReason, setDeleteReason] = useState('');
@@ -72,7 +72,7 @@ const DataDeletionRequest = () => {
             handleCloseConfirmDialog();
             setDeleteReason('');
             setUnderstand(false);
-        } catch (error) {
+        } catch {
             setSnackbarMessage('Erro ao enviar solicitação. Tente novamente mais tarde.');
             setSnackbarSeverity('error');
             setSnackbarOpen(true);

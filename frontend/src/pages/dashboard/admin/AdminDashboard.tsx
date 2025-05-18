@@ -1,74 +1,102 @@
-import React, { useState, useEffect } from 'react';
 import {
+    Assessment,
+    AttachMoney,
+    CalendarMonth,
+    CloudDownload,
+    Event,
+    FileDownload,
+    MedicalServices,
+    MoreVert,
+    People,
+    Person,
+    PersonAdd,
+    Print,
+    Refresh,
+    TrendingDown,
+    TrendingUp
+} from '@mui/icons-material';
+import {
+    Avatar,
     Box,
-    Typography,
-    Grid,
-    Paper,
+    Button,
     Card,
     CardContent,
-    CardHeader,
-    Divider,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Button,
-    IconButton,
+    Chip,
     CircularProgress,
-    Avatar,
-    Menu,
-    Tooltip,
+    FormControl,
+    Grid,
+    IconButton,
+    InputLabel,
     List,
     ListItem,
-    ListItemText,
     ListItemAvatar,
     ListItemSecondaryAction,
-    Chip
+    ListItemText,
+    Menu,
+    MenuItem,
+    Paper,
+    Select,
+    SelectChangeEvent,
+    Typography
 } from '@mui/material';
-import {
-    People,
-    PersonAdd,
-    MedicalServices,
-    TrendingUp,
-    TrendingDown,
-    AttachMoney,
-    AccountBalance,
-    Event,
-    MoreVert,
-    InsertDriveFile,
-    Print,
-    FileDownload,
-    CloudDownload,
-    Refresh,
-    Person,
-    LocationOn,
-    CalendarMonth,
-    Schedule,
-    Phone,
-    Assessment
-} from '@mui/icons-material';
-import { format, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import React, { useEffect, useState } from 'react';
 import {
-    BarChart,
     Bar,
-    LineChart,
-    Line,
-    PieChart,
-    Pie,
-    XAxis,
-    YAxis,
+    BarChart,
     CartesianGrid,
+    Cell,
     Tooltip as ChartTooltip,
     Legend,
+    Line,
+    LineChart,
+    Pie,
+    PieChart,
     ResponsiveContainer,
-    Cell
+    XAxis,
+    YAxis
 } from 'recharts';
 import { useAuth } from '../../../hooks/useAuth';
-import { api } from '../../../services/api';
+
+// Interfaces para os tipos de dados
+interface AppointmentByType {
+    name: string;
+    value: number;
+}
+
+interface RevenueData {
+    name: string;
+    receita: number;
+    despesas: number;
+}
+
+interface OccupancyData {
+    name: string;
+    taxa: number;
+}
+
+interface Appointment {
+    id: string;
+    patientName: string;
+    professionalName: string;
+    specialty: string;
+    date: string;
+    time: string;
+    status: 'scheduled' | 'completed' | 'cancelled';
+    type: 'consultation' | 'return' | 'telemedicine';
+}
+
+interface Professional {
+    id: string;
+    name: string;
+    specialty: string;
+    appointmentsCount: number;
+    revenue: number;
+}
 
 const AdminDashboard = () => {
-    const { user } = useAuth();
+    useAuth();
     const [loading, setLoading] = useState(false);
     const [period, setPeriod] = useState('month');
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -83,11 +111,11 @@ const AdminDashboard = () => {
         expenses: 0,
         profit: 0
     });
-    const [appointmentsByType, setAppointmentsByType] = useState<any[]>([]);
-    const [revenueData, setRevenueData] = useState<any[]>([]);
-    const [occupancyRate, setOccupancyRate] = useState<any[]>([]);
-    const [recentAppointments, setRecentAppointments] = useState<any[]>([]);
-    const [topProfessionals, setTopProfessionals] = useState<any[]>([]);
+    const [appointmentsByType, setAppointmentsByType] = useState<AppointmentByType[]>([]);
+    const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
+    const [occupancyRate, setOccupancyRate] = useState<OccupancyData[]>([]);
+    const [recentAppointments, setRecentAppointments] = useState<Appointment[]>([]);
+    const [topProfessionals, setTopProfessionals] = useState<Professional[]>([]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -229,6 +257,8 @@ const AdminDashboard = () => {
 
         for (let i = 0; i < 5; i++) {
             const date = subDays(new Date(), getRandomNumber(0, 3));
+            const status = ['scheduled', 'completed', 'cancelled'][getRandomNumber(0, 2)] as 'scheduled' | 'completed' | 'cancelled';
+            const type = ['consultation', 'return', 'telemedicine'][getRandomNumber(0, 2)] as 'consultation' | 'return' | 'telemedicine';
 
             appointments.push({
                 id: `app-${i + 1}`,
@@ -237,8 +267,8 @@ const AdminDashboard = () => {
                 specialty: ['Cardiologia', 'Ortopedia', 'Clínica Geral', 'Dermatologia', 'Oftalmologia'][getRandomNumber(0, 4)],
                 date: format(date, 'dd/MM/yyyy'),
                 time: `${getRandomNumber(8, 17)}:${['00', '15', '30', '45'][getRandomNumber(0, 3)]}`,
-                status: ['scheduled', 'completed', 'cancelled'][getRandomNumber(0, 2)],
-                type: ['consultation', 'return', 'telemedicine'][getRandomNumber(0, 2)]
+                status,
+                type
             });
         }
 
@@ -288,7 +318,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const getStatusLabel = (status: string) => {
+    const getStatusLabel = (status: string): { label: string; color: 'primary' | 'success' | 'error' | 'default' } => {
         switch (status) {
             case 'scheduled':
                 return { label: 'Agendada', color: 'primary' };
@@ -314,7 +344,7 @@ const AdminDashboard = () => {
         handleMenuClose();
     };
 
-    const handlePeriodChange = (event: any) => {
+    const handlePeriodChange = (event: SelectChangeEvent) => {
         setPeriod(event.target.value);
     };
 
@@ -549,7 +579,7 @@ const AdminDashboard = () => {
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
                                             </Pie>
-                                            <ChartTooltip formatter={(value, name, props) => [value, name]} />
+                                            <ChartTooltip formatter={(value, name) => [value, name]} />
                                             <Legend />
                                         </PieChart>
                                     </ResponsiveContainer>
@@ -616,7 +646,7 @@ const AdminDashboard = () => {
                                                             </Typography>
                                                             <Chip
                                                                 label={statusInfo.label}
-                                                                color={statusInfo.color as any}
+                                                                color={statusInfo.color}
                                                                 size="small"
                                                             />
                                                         </Box>

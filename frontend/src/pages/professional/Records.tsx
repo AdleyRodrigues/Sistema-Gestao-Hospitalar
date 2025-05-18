@@ -1,144 +1,52 @@
-import React, { useState, useEffect } from 'react';
 import {
-    Box,
-    Typography,
-    Paper,
-    TextField,
-    InputAdornment,
-    Grid,
-    Button,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    IconButton,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Tabs,
-    Tab,
+    Add as AddIcon,
+    Biotech as BiotechIcon,
+    Delete as DeleteIcon,
+    Edit as EditIcon,
+    LocalHospital as LocalHospitalIcon,
+    MedicalServices as MedicalServicesIcon,
+    Person as PersonIcon,
+    Search as SearchIcon
+} from '@mui/icons-material';
+import {
+    Alert,
     Avatar,
-    Chip,
-    Menu,
-    MenuItem,
-    Divider,
-    ListItemIcon,
+    Box,
+    Button,
     Card,
     CardContent,
-    CardHeader,
-    FormControl,
-    InputLabel,
-    Select,
-    OutlinedInput,
-    Snackbar,
-    Alert,
+    Chip,
     CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    FormControl,
+    Grid,
+    IconButton,
+    InputAdornment,
+    InputLabel,
     List,
     ListItem,
-    ListItemText,
     ListItemAvatar,
-    ListItemSecondaryAction
+    ListItemText,
+    MenuItem,
+    Paper,
+    Select,
+    SelectChangeEvent,
+    Snackbar,
+    Tab,
+    Tabs,
+    TextField,
+    Typography
 } from '@mui/material';
-import {
-    Search as SearchIcon,
-    FilterList as FilterListIcon,
-    Add as AddIcon,
-    Edit as EditIcon,
-    Visibility as VisibilityIcon,
-    Person as PersonIcon,
-    MedicalServices as MedicalServicesIcon,
-    Biotech as BiotechIcon,
-    LocalHospital as LocalHospitalIcon,
-    Assignment as AssignmentIcon,
-    AccessTime as AccessTimeIcon,
-    Event as EventIcon,
-    MoreVert as MoreVertIcon,
-    Delete as DeleteIcon
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { api } from '../../services/api';
 import { MedicalRecordEntry, Patient, Prescription } from '../../types/medicalRecord';
-
-interface MedicalRecord {
-    id: number;
-    patientId: number;
-    patientName: string;
-    patientAvatar?: string;
-    date: string;
-    type: 'Consulta' | 'Exame' | 'Cirurgia' | 'Retorno';
-    diagnosis: string;
-    prescription?: string;
-    notes?: string;
-    status: 'Concluído' | 'Em andamento' | 'Agendado';
-}
-
-const mockRecords: MedicalRecord[] = [
-    {
-        id: 1,
-        patientId: 1,
-        patientName: "Ana Silva",
-        patientAvatar: "https://randomuser.me/api/portraits/women/1.jpg",
-        date: "10/08/2023",
-        type: "Consulta",
-        diagnosis: "Hipertensão arterial controlada",
-        prescription: "Losartana 50mg - 1 comprimido por dia",
-        notes: "Paciente relatou melhora na pressão após início da atividade física",
-        status: "Concluído"
-    },
-    {
-        id: 2,
-        patientId: 2,
-        patientName: "João Santos",
-        patientAvatar: "https://randomuser.me/api/portraits/men/1.jpg",
-        date: "05/08/2023",
-        type: "Exame",
-        diagnosis: "Glicemia elevada",
-        prescription: "Metformina 850mg - 2 comprimidos por dia",
-        notes: "Encaminhado para nutricionista",
-        status: "Concluído"
-    },
-    {
-        id: 3,
-        patientId: 3,
-        patientName: "Maria Oliveira",
-        patientAvatar: "https://randomuser.me/api/portraits/women/2.jpg",
-        date: "15/08/2023",
-        type: "Retorno",
-        diagnosis: "Ansiedade",
-        prescription: "Escitalopram 10mg - 1 comprimido por dia",
-        notes: "Paciente relatou melhora nos sintomas de ansiedade",
-        status: "Em andamento"
-    },
-    {
-        id: 4,
-        patientId: 4,
-        patientName: "Pedro Ferreira",
-        patientAvatar: "https://randomuser.me/api/portraits/men/2.jpg",
-        date: "22/08/2023",
-        type: "Cirurgia",
-        diagnosis: "Hérnia inguinal bilateral",
-        notes: "Procedimento cirúrgico agendado",
-        status: "Agendado"
-    },
-    {
-        id: 5,
-        patientId: 5,
-        patientName: "Carla Souza",
-        patientAvatar: "https://randomuser.me/api/portraits/women/3.jpg",
-        date: "18/08/2023",
-        type: "Consulta",
-        diagnosis: "Cefaleia tensional",
-        prescription: "Dipirona 1g - em caso de dor",
-        notes: "Orientada a reduzir tempo de exposição a telas",
-        status: "Concluído"
-    }
-];
 
 const ProfessionalRecords = () => {
     const { user } = useAuth();
@@ -290,7 +198,7 @@ const ProfessionalRecords = () => {
     };
 
     const handleRecordInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }>
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }> | SelectChangeEvent
     ) => {
         const { name, value } = e.target as { name: string; value: string };
         setNewRecord(prev => ({ ...prev, [name]: value }));
@@ -309,18 +217,16 @@ const ProfessionalRecords = () => {
                 date: new Date().toISOString()
             };
 
-            let response;
-
             if (selectedRecord) {
                 // Atualizar prontuário existente
-                response = await api.put(`/medical_records/${selectedRecord.id}`, {
+                await api.put(`/medical_records/${selectedRecord.id}`, {
                     ...selectedRecord,
                     ...recordData
                 });
                 showSnackbar('Prontuário atualizado com sucesso!', 'success');
             } else {
                 // Criar novo prontuário
-                response = await api.post('/medical_records', recordData);
+                await api.post('/medical_records', recordData);
                 showSnackbar('Novo registro adicionado ao prontuário!', 'success');
             }
 

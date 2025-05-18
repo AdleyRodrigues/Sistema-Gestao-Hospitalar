@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginStart, loginSuccess, loginFailure, logout } from '../store/slices/authSlice';
+import { api } from '../services/api';
+import { loginFailure, loginStart, loginSuccess, logout } from '../store/slices/authSlice';
 import { useAppDispatch } from './useAppDispatch';
 import { useAppSelector } from './useAppSelector';
-import { api } from '../services/api';
-import { User } from '../types/auth';
 
 export const useAuth = () => {
     const dispatch = useAppDispatch();
@@ -41,7 +40,11 @@ export const useAuth = () => {
             setLoading(false);
             return true;
         } catch (error) {
-            dispatch(loginFailure('Credenciais inválidas. Tente novamente.'));
+            const errorMessage = error instanceof Error
+                ? error.message
+                : 'Credenciais inválidas. Tente novamente.';
+
+            dispatch(loginFailure(errorMessage));
             setLoading(false);
             return false;
         }

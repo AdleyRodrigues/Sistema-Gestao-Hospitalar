@@ -1,24 +1,23 @@
-import { useState } from 'react';
+import { ArrowBack } from '@mui/icons-material';
 import {
+    Alert,
     Box,
-    Container,
-    Typography,
-    Paper,
-    Divider,
-    Tabs,
-    Tab,
     Button,
     Card,
     CardContent,
-    Switch,
+    Container,
+    Divider,
     FormControlLabel,
+    Paper,
     Snackbar,
-    Alert
+    Switch,
+    Tab,
+    Tabs,
+    Typography
 } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataDeletionRequest from '../../components/privacy/DataDeletionRequest';
-import { useAuth } from '../../hooks/useAuth';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -48,7 +47,6 @@ function TabPanel(props: TabPanelProps) {
 
 const PrivacySettings = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
     const [tabValue, setTabValue] = useState(0);
     const [consentSettings, setConsentSettings] = useState({
         marketing: false,

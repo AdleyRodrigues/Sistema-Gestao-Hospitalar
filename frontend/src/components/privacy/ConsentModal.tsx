@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -12,6 +11,7 @@ import {
     Link,
     Typography
 } from '@mui/material';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface ConsentModalProps {

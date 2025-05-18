@@ -1,65 +1,61 @@
-import React, { useState } from 'react';
 import {
-    Box,
-    Typography,
-    Paper,
-    Grid,
-    Button,
-    Card,
-    CardContent,
-    CardMedia,
-    Divider,
-    Chip,
-    Avatar,
-    List,
-    ListItem,
-    ListItemText,
-    ListItemAvatar,
-    TextField,
-    Tab,
-    Tabs,
-    IconButton,
-    FormControl,
-    InputLabel,
-    MenuItem,
-    Select,
-    Switch,
-    FormControlLabel,
-    Badge,
-    ListItemSecondaryAction,
-    Dialog,
-    DialogContent,
-    DialogTitle,
-    DialogActions
-} from '@mui/material';
-import {
-    VideoCall,
-    EventAvailable,
     AccessTime,
-    Message,
-    Settings,
-    Videocam,
-    History,
-    PeopleAlt,
-    Event,
-    LocationOn,
-    Link,
-    FileCopy,
+    Add as AddIcon,
+    ArrowForward,
+    Cancel as CancelIcon,
     CheckCircle,
-    Warning,
+    Check as CheckIcon,
+    Close as CloseIcon,
+    EventAvailable,
+    FileCopy,
+    History,
+    Message,
+    PeopleAlt,
+    PersonAdd,
+    Room,
+    Send,
+    Settings,
     SignalWifi4Bar,
     SignalWifiOff,
     Today,
-    Room,
-    PersonAdd,
-    Send,
-    ArrowForward,
-    Close as CloseIcon,
-    Add as AddIcon,
-    Check as CheckIcon,
-    Cancel as CancelIcon
+    VideoCall,
+    Videocam,
+    Warning
 } from '@mui/icons-material';
+import {
+    Avatar,
+    Badge,
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Chip,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    FormControl,
+    FormControlLabel,
+    Grid,
+    IconButton,
+    InputLabel,
+    List,
+    ListItem,
+    ListItemAvatar,
+    ListItemSecondaryAction,
+    ListItemText,
+    MenuItem,
+    Paper,
+    Select,
+    Switch,
+    Tab,
+    Tabs,
+    TextField,
+    Typography
+} from '@mui/material';
 import { SelectChangeEvent } from '@mui/material/Select';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface TeleconsultationAppointment {
@@ -181,10 +177,6 @@ const ProfessionalTelemedicine = () => {
         online: true
     };
 
-    const handleStartConsultation = (appointment: TeleconsultationAppointment) => {
-        setOpenConsultation(appointment);
-    };
-
     const handleCloseConsultation = () => {
         setOpenConsultation(null);
     };
@@ -203,17 +195,6 @@ const ProfessionalTelemedicine = () => {
         if (selectedTab === 1) return consultation.status === 'Pendente'; // Realizadas
         return true;
     });
-
-    // Verificar se tem consulta agendada para hoje
-    const today = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const hasAppointmentToday = todaysConsultations.some(app =>
-        app.status === 'Confirmada' && app.date === today
-    );
-
-    // Próxima consulta do dia
-    const nextAppointment = hasAppointmentToday
-        ? todaysConsultations.find(app => app.status === 'Confirmada' && app.date === today)
-        : null;
 
     return (
         <Box>

@@ -1,5 +1,11 @@
 // Mock para date-fns
-export const format = (date: Date, formatStr: string, options?: any) => {
+export const format = (
+    date: Date,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    formatStr: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    options?: Record<string, unknown>
+) => {
     return date.toISOString();
 };
 

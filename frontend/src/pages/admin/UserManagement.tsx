@@ -1,63 +1,55 @@
-import React, { useState, useEffect } from 'react';
 import {
+    CalendarMonth,
+    Delete,
+    Edit,
+    FilterList,
+    HealthAndSafety,
+    Mail,
+    MedicalServices,
+    MoreVert,
+    Person,
+    PersonAdd,
+    Phone,
+    Search,
+    Visibility,
+    VisibilityOff
+} from '@mui/icons-material';
+import {
+    Alert,
+    Avatar,
     Box,
-    Typography,
-    Grid,
-    Paper,
-    Tabs,
-    Tab,
-    TextField,
-    InputAdornment,
     Button,
     Chip,
-    Avatar,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
+    Grid,
+    IconButton,
+    InputAdornment,
+    InputLabel,
+    Menu,
+    MenuItem,
+    Paper,
+    Select,
+    SelectChangeEvent,
+    Snackbar,
+    Tab,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
-    TableRow,
     TablePagination,
-    IconButton,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    CircularProgress,
-    Tooltip,
-    Snackbar,
-    Alert,
-    FormHelperText,
-    Menu
+    TableRow,
+    Tabs,
+    TextField,
+    Typography
 } from '@mui/material';
-import {
-    Search,
-    PersonAdd,
-    Edit,
-    Delete,
-    MoreVert,
-    Mail,
-    Phone,
-    LocationOn,
-    MedicalServices,
-    Person,
-    CalendarMonth,
-    School,
-    WorkOutline,
-    HealthAndSafety,
-    Visibility,
-    VisibilityOff,
-    FilterList,
-    Refresh,
-    CloudDownload,
-    Print
-} from '@mui/icons-material';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { api } from '../../services/api';
 
@@ -94,8 +86,35 @@ interface Professional extends User {
     endTime: string;
 }
 
+// Interface para o objeto userData
+interface UserFormData {
+    name: string;
+    email: string;
+    phone: string;
+    role: 'admin' | 'professional' | 'patient';
+    status: 'active' | 'inactive';
+    password?: string;
+    birthDate?: string;
+    gender?: string;
+    bloodType?: string;
+    address?: {
+        street: string;
+        number: string;
+        neighborhood: string;
+        city: string;
+        state: string;
+        zipCode: string;
+    };
+    specialty?: string;
+    crm?: string;
+    availableDays?: number[];
+    startTime?: string;
+    endTime?: string;
+    appointmentDuration?: number;
+}
+
 const AdminUserManagement = () => {
-    const { user } = useAuth();
+    useAuth();
     const [tabValue, setTabValue] = useState(0);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -109,7 +128,7 @@ const AdminUserManagement = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [filterMenuAnchorEl, setFilterMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [actionMenuAnchorEl, setActionMenuAnchorEl] = useState<null | HTMLElement>(null);
-    const [selectedRow, setSelectedRow] = useState<string | null>(null);
+    const [, setSelectedRow] = useState<string | null>(null);
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: '',
@@ -235,7 +254,7 @@ const AdminUserManagement = () => {
     };
 
     const handleFormInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }>
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | { name?: string; value: unknown }> | SelectChangeEvent
     ) => {
         const { name, value } = e.target as { name: string; value: unknown };
 
@@ -438,12 +457,12 @@ const AdminUserManagement = () => {
         setLoading(true);
         try {
             // Prepara os dados específicos com base no tipo de usuário
-            let userData: any = {
+            let userData: UserFormData = {
                 name: userForm.name,
                 email: userForm.email,
                 phone: userForm.phone,
-                role: userForm.role,
-                status: userForm.status
+                role: userForm.role as 'admin' | 'professional' | 'patient',
+                status: userForm.status as 'active' | 'inactive'
             };
 
             // Adiciona senha apenas para novos usuários

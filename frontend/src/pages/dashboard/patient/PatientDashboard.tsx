@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Box, Typography, Grid, Paper, Divider, Button, Stack, Card, CardContent, Tooltip } from '@mui/material';
-import { CalendarMonth, MedicalServices, History, VideoCall } from '@mui/icons-material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
+import { CalendarMonth, History, MedicalServices, VideoCall } from '@mui/icons-material';
+import { Box, Button, Card, CardContent, Divider, Grid, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../services/api';
 
@@ -21,12 +21,36 @@ interface Exam {
     status: string;
 }
 
+interface ConsultationData {
+    name: string;
+    consultations: number;
+}
+
+// Interfaces para os dados da API
+interface ApiAppointment {
+    id: number;
+    professionalId: number;
+    date: string;
+}
+
+interface ApiProfessional {
+    id: number;
+    name: string;
+    specialty: string;
+}
+
+interface ApiExam {
+    id: number;
+    name: string;
+    date: string;
+    status: string;
+}
+
 const PatientDashboard = () => {
     const { user } = useAuth();
-    const [loading, setLoading] = useState(false);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [exams, setExams] = useState<Exam[]>([]);
-    const [consultationData, setConsultationData] = useState<any[]>([
+    const [consultationData] = useState<ConsultationData[]>([
         { name: 'Jan', consultations: 2 },
         { name: 'Fev', consultations: 1 },
         { name: 'Mar', consultations: 3 },
@@ -42,20 +66,20 @@ const PatientDashboard = () => {
                 // Buscar consultas
                 if (user) {
                     const appointmentsResponse = await api.get(`/appointments?patientId=${user.id}`);
-                    const professionalIds = [...new Set(appointmentsResponse.data.map((app: any) => app.professionalId))];
+                    const professionalIds = [...new Set(appointmentsResponse.data.map((app: ApiAppointment) => app.professionalId))];
 
                     // Buscar dados dos profissionais
                     const professionalsResponse = await api.get(`/professionals?${professionalIds.map(id => `id=${id}`).join('&')}`);
-                    const professionalsMap = professionalsResponse.data.reduce((acc: any, prof: any) => {
+                    const professionalsMap = professionalsResponse.data.reduce((acc: Record<number, ApiProfessional>, prof: ApiProfessional) => {
                         acc[prof.id] = prof;
                         return acc;
                     }, {});
 
                     // Formatar dados das consultas
                     const formattedAppointments = appointmentsResponse.data
-                        .filter((app: any) => new Date(app.date) > new Date())
+                        .filter((app: ApiAppointment) => new Date(app.date) > new Date())
                         .slice(0, 5)
-                        .map((app: any) => {
+                        .map((app: ApiAppointment) => {
                             const professional = professionalsMap[app.professionalId] || {};
                             const appointmentDate = new Date(app.date);
                             return {
@@ -71,7 +95,7 @@ const PatientDashboard = () => {
 
                     // Buscar exames
                     const examsResponse = await api.get(`/exams?patientId=${user.id}`);
-                    const formattedExams = examsResponse.data.map((exam: any) => ({
+                    const formattedExams = examsResponse.data.map((exam: ApiExam) => ({
                         id: exam.id,
                         name: exam.name,
                         date: new Date(exam.date).toLocaleDateString('pt-BR'),

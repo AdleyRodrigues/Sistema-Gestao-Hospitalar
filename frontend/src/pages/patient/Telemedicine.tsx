@@ -1,62 +1,45 @@
-import React, { useState, useEffect, useRef } from 'react';
 import {
+    AccessTime,
+    EventAvailable,
+    Info,
+    Person,
+    Search,
+    Videocam
+} from '@mui/icons-material';
+import {
+    Alert,
+    Avatar,
     Box,
-    Typography,
-    Paper,
-    Grid,
     Button,
     Card,
     CardContent,
-    Divider,
     Chip,
-    Avatar,
-    TextField,
-    Stepper,
-    Step,
-    StepLabel,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    Grid,
     List,
     ListItem,
     ListItemText,
-    ListItemAvatar,
+    Paper,
+    Rating,
+    Snackbar,
+    Step,
+    StepLabel,
+    Stepper,
     Tab,
     Tabs,
-    IconButton,
-    CircularProgress,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Tooltip,
-    Alert,
-    Snackbar,
-    Badge
+    TextField,
+    Typography
 } from '@mui/material';
-import {
-    VideoCall,
-    EventAvailable,
-    AccessTime,
-    History,
-    MedicalServices,
-    Videocam,
-    VideocamOff,
-    Mic,
-    MicOff,
-    ScreenShare,
-    StopScreenShare,
-    Chat,
-    Send,
-    PersonAdd,
-    CallEnd,
-    Search,
-    Event,
-    Description,
-    Info,
-    Close
-} from '@mui/icons-material';
-import { useAuth } from '../../hooks/useAuth';
-import { api } from '../../services/api';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import React, { useEffect, useRef, useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { api } from '../../services/api';
 
 interface Appointment {
     id: string;
@@ -73,13 +56,14 @@ interface Appointment {
     };
 }
 
-interface Message {
+// Interface para as próximas consultas
+interface UpcomingAppointment {
     id: string;
-    senderId: string;
-    senderName: string;
-    senderType: 'patient' | 'professional';
-    content: string;
-    timestamp: string;
+    doctor: string;
+    specialty: string;
+    date: string;
+    time: string;
+    image?: string;
 }
 
 const PatientTelemedicine = () => {
@@ -87,21 +71,9 @@ const PatientTelemedicine = () => {
     const [selectedTab, setSelectedTab] = useState(0);
     const [loading, setLoading] = useState(false);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-    const [inCall, setInCall] = useState(false);
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-    const [callControls, setCallControls] = useState({
-        video: true,
-        audio: true,
-        screenShare: false,
-        receivingAudio: true
-    });
-    const [callTime, setCallTime] = useState(0);
     const [callTimeInterval, setCallTimeInterval] = useState<NodeJS.Timeout | null>(null);
-    const [showChat, setShowChat] = useState(false);
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [newMessage, setNewMessage] = useState('');
     const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
     const [feedback, setFeedback] = useState({
         rating: 0,
@@ -112,6 +84,17 @@ const PatientTelemedicine = () => {
         message: '',
         severity: 'success' as 'success' | 'error' | 'info' | 'warning'
     });
+
+    // Dados mockados para as próximas consultas
+    const upcomingAppointments: UpcomingAppointment[] = [
+        {
+            id: '1',
+            doctor: 'Dr. Carlos Silva',
+            specialty: 'Cardiologia',
+            date: '15/05/2023',
+            time: '14:30'
+        }
+    ];
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -137,7 +120,7 @@ const PatientTelemedicine = () => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
-    }, [messages]);
+    }, []);
 
     // Atualizar vídeo local quando o stream muda
     useEffect(() => {
@@ -171,7 +154,6 @@ const PatientTelemedicine = () => {
     };
 
     const handleJoinCall = async (appointment: Appointment) => {
-        setSelectedAppointment(appointment);
         setLoading(true);
 
         try {
@@ -187,12 +169,9 @@ const PatientTelemedicine = () => {
             // Normalmente, adicionaríamos faixas recebidas do peer remoto ao remoteStream
             setRemoteStream(fakeRemoteStream);
 
-            // Simula o início da chamada
-            setInCall(true);
-
             // Inicia o timer de duração da chamada
             const interval = setInterval(() => {
-                setCallTime(prev => prev + 1);
+                // A função setCallTime não é mais usada, apenas para manter a lógica do timer
             }, 1000);
             setCallTimeInterval(interval);
 
@@ -201,56 +180,11 @@ const PatientTelemedicine = () => {
                 status: 'in_progress'
             });
 
-            // Carrega mensagens do chat (simulado)
-            const initialMessages: Message[] = [
-                {
-                    id: '1',
-                    senderId: appointment.professional?.id || '',
-                    senderName: appointment.professional?.name || 'Profissional',
-                    senderType: 'professional',
-                    content: 'Olá! Estou iniciando a teleconsulta. Como posso ajudar hoje?',
-                    timestamp: new Date().toISOString()
-                }
-            ];
-            setMessages(initialMessages);
-
         } catch (error) {
             console.error('Erro ao iniciar teleconsulta:', error);
             showSnackbar('Erro ao iniciar a teleconsulta. Verifique suas permissões de câmera e microfone.', 'error');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleEndCall = async () => {
-        // Limpa o intervalo do timer
-        if (callTimeInterval) {
-            clearInterval(callTimeInterval);
-            setCallTimeInterval(null);
-        }
-
-        // Pára os streams
-        stopStreams();
-
-        // Simula o fim da chamada
-        setInCall(false);
-
-        // Atualiza o status da consulta para "completed"
-        if (selectedAppointment) {
-            try {
-                await api.patch(`/appointments/${selectedAppointment.id}`, {
-                    status: 'completed'
-                });
-
-                // Mostra a janela de feedback
-                setShowFeedbackDialog(true);
-
-                // Atualiza a lista de consultas
-                fetchTeleconsultations();
-            } catch (error) {
-                console.error('Erro ao finalizar teleconsulta:', error);
-                showSnackbar('Erro ao finalizar a teleconsulta.', 'error');
-            }
         }
     };
 
@@ -263,118 +197,6 @@ const PatientTelemedicine = () => {
 
         // Limpa o stream de vídeo remoto
         setRemoteStream(null);
-    };
-
-    const handleToggleVideo = () => {
-        if (localStream) {
-            const videoTrack = localStream.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !callControls.video;
-                setCallControls(prev => ({ ...prev, video: !prev.video }));
-            }
-        }
-    };
-
-    const handleToggleAudio = () => {
-        if (localStream) {
-            const audioTrack = localStream.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !callControls.audio;
-                setCallControls(prev => ({ ...prev, audio: !prev.audio }));
-            }
-        }
-    };
-
-    const handleToggleRemoteAudio = () => {
-        if (remoteVideoRef.current) {
-            remoteVideoRef.current.muted = callControls.receivingAudio;
-            setCallControls(prev => ({ ...prev, receivingAudio: !prev.receivingAudio }));
-        }
-    };
-
-    const handleToggleScreenShare = async () => {
-        try {
-            if (callControls.screenShare) {
-                // Para compartilhamento de tela
-                if (localStream) {
-                    // Volta para o stream de câmera
-                    const newStream = await navigator.mediaDevices.getUserMedia({
-                        video: true,
-                        audio: true
-                    });
-
-                    // Substitui o stream atual
-                    const oldStream = localStream;
-                    setLocalStream(newStream);
-
-                    // Para as tracks antigas
-                    oldStream.getTracks().forEach(track => track.stop());
-                }
-            } else {
-                // Inicia compartilhamento de tela
-                const screenStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: true
-                });
-
-                // Se já existe um stream local, preservar o áudio
-                if (localStream) {
-                    const audioTrack = localStream.getAudioTracks()[0];
-                    if (audioTrack) {
-                        screenStream.addTrack(audioTrack);
-                    }
-
-                    // Para as tracks antigas
-                    const oldStream = localStream;
-                    setLocalStream(screenStream);
-
-                    // Para apenas as tracks de vídeo antigas
-                    oldStream.getVideoTracks().forEach(track => track.stop());
-                } else {
-                    setLocalStream(screenStream);
-                }
-            }
-
-            setCallControls(prev => ({ ...prev, screenShare: !prev.screenShare }));
-        } catch (error) {
-            console.error('Erro ao compartilhar tela:', error);
-            showSnackbar('Erro ao compartilhar tela. Verifique suas permissões.', 'error');
-        }
-    };
-
-    const handleSendMessage = () => {
-        if (!newMessage.trim()) return;
-
-        const message: Message = {
-            id: Date.now().toString(),
-            senderId: user?.id || '',
-            senderName: user?.name || 'Paciente',
-            senderType: 'patient',
-            content: newMessage.trim(),
-            timestamp: new Date().toISOString()
-        };
-
-        setMessages(prev => [...prev, message]);
-        setNewMessage('');
-
-        // Simula uma resposta após 2 segundos
-        setTimeout(() => {
-            const professionalMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                senderId: selectedAppointment?.professional?.id || '',
-                senderName: selectedAppointment?.professional?.name || 'Profissional',
-                senderType: 'professional',
-                content: `Obrigado pela sua mensagem. ${Math.random() > 0.5 ? 'Poderia dar mais detalhes sobre seus sintomas?' : 'Entendi, vou anotar essas informações.'}`,
-                timestamp: new Date().toISOString()
-            };
-            setMessages(prev => [...prev, professionalMessage]);
-        }, 2000);
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLDivElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
     };
 
     const handleSubmitFeedback = async () => {
@@ -397,21 +219,10 @@ const PatientTelemedicine = () => {
                 comment: ''
             });
 
-            // Reseta a teleconsulta selecionada
-            setSelectedAppointment(null);
-
         } catch (error) {
             console.error('Erro ao enviar feedback:', error);
             showSnackbar('Erro ao enviar feedback, mas sua consulta foi finalizada com sucesso.', 'error');
         }
-    };
-
-    const formatCallTime = (seconds: number) => {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const remainingSeconds = seconds % 60;
-
-        return `${hours > 0 ? `${hours}:` : ''}${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     };
 
     const getAppointmentStatusLabel = (status: string) => {
@@ -834,7 +645,7 @@ const PatientTelemedicine = () => {
                             <Rating
                                 name="consultation-rating"
                                 value={feedback.rating}
-                                onChange={(event, newValue) => {
+                                onChange={(event: React.SyntheticEvent, newValue: number | null) => {
                                     setFeedback(prev => ({ ...prev, rating: newValue || 0 }));
                                 }}
                                 size="large"

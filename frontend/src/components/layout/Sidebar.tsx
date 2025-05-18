@@ -1,65 +1,39 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    Drawer,
+    Assignment,
+    Business,
+    CalendarMonth,
+    ConstructionRounded,
+    Dashboard,
+    Description,
+    Event,
+    Group,
+    LocalHospital,
+    Logout,
+    Person,
+    PrivacyTip,
+    Settings,
+    VideoCall
+} from '@mui/icons-material';
+import {
     Box,
+    Divider,
+    Drawer,
     List,
     ListItem,
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    Toolbar,
-    Divider,
-    Collapse,
     Tooltip,
-    styled,
-    IconButton,
+    styled
 } from '@mui/material';
-import {
-    Dashboard,
-    CalendarMonth,
-    MedicalServices,
-    AdminPanelSettings,
-    Person,
-    People,
-    VideoCall,
-    Assignment,
-    ExpandLess,
-    ExpandMore,
-    History,
-    ConstructionRounded,
-    Event,
-    LocalHospital,
-    Settings,
-    KeyboardArrowDown,
-    KeyboardArrowUp,
-    Description,
-    AssignmentInd,
-    Group,
-    Business,
-    Logout,
-    Security,
-    PrivacyTip,
-} from '@mui/icons-material';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { UserRole } from '../../types/auth';
 
 interface SidebarProps {
     open: boolean;
     width: number;
-    onClose: () => void;
 }
-
-// Definir quais páginas estão implementadas
-const implementedPages = [
-    '/admin/dashboard',
-    '/professional/dashboard',
-    '/patient/dashboard',
-    '/login',
-    '/patient/privacy-settings',
-    '/professional/privacy-settings',
-    '/admin/privacy-settings',
-];
 
 // Menus para diferentes perfis de usuário
 const menuItems = {
@@ -108,11 +82,10 @@ const Logo = styled('div')(({ theme }) => ({
     },
 }));
 
-export const Sidebar = ({ open, width, onClose }: SidebarProps) => {
+export const Sidebar = ({ open, width }: SidebarProps) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const [openSubMenu, setOpenSubMenu] = useState<string | null>(null);
 
     // Verifica o perfil do usuário
     const userRole = user?.role || 'patient';
@@ -124,10 +97,6 @@ export const Sidebar = ({ open, width, onClose }: SidebarProps) => {
         if (implemented) {
             navigate(path);
         }
-    };
-
-    const toggleSubMenu = (key: string) => {
-        setOpenSubMenu(openSubMenu === key ? null : key);
     };
 
     // Handler para logout

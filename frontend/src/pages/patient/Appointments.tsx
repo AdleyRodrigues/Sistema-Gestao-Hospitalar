@@ -1,60 +1,48 @@
-import React, { useState, useEffect } from 'react';
 import {
-    Box,
-    Typography,
-    Paper,
-    Grid,
-    Card,
-    CardContent,
-    Divider,
-    Button,
-    Tabs,
-    Tab,
-    TextField,
-    MenuItem,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    FormControl,
-    InputLabel,
-    Select,
-    FormHelperText,
-    CircularProgress,
-    Chip,
-    Avatar,
-    IconButton,
-    Alert,
-    Snackbar,
-    List,
-    ListItem,
-    ListItemText,
-    ListItemAvatar,
-    ListItemSecondaryAction
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import {
-    CalendarMonth,
     AccessTime,
-    PersonAdd,
-    Event,
-    VideoCameraFront,
+    CalendarMonth,
     Cancel,
-    DeleteOutline,
-    Check,
+    Event,
     EventAvailable,
     EventBusy,
-    Person,
     MedicalServices,
-    LocationOn,
-    Info
+    Person,
+    VideoCameraFront
 } from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import {
+    Alert,
+    Avatar,
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Chip,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
+    FormHelperText,
+    Grid,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    SelectChangeEvent,
+    Snackbar,
+    Tab,
+    Tabs,
+    TextField,
+    Typography
+} from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { addDays, differenceInCalendarDays, format, isAfter, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { format, addDays, isBefore, parseISO, isAfter, differenceInCalendarDays } from 'date-fns';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { api } from '../../services/api';
 
@@ -218,7 +206,7 @@ const PatientAppointments = () => {
         const [startHour, startMinute] = professional.startTime.split(':').map(Number);
         const [endHour, endMinute] = professional.endTime.split(':').map(Number);
 
-        let currentSlot = new Date(selectedDate);
+        const currentSlot = new Date(selectedDate);
         currentSlot.setHours(startHour, startMinute, 0, 0);
 
         const endTime = new Date(selectedDate);
@@ -281,7 +269,7 @@ const PatientAppointments = () => {
         setSelectedAppointment(null);
     };
 
-    const handleProfessionalChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    const handleProfessionalChange = (event: SelectChangeEvent) => {
         const professionalId = event.target.value as string;
         setNewAppointment(prev => ({ ...prev, professionalId }));
         setFormErrors(prev => ({ ...prev, professionalId: '' }));
@@ -306,7 +294,7 @@ const PatientAppointments = () => {
         }
     };
 
-    const handleAppointmentTypeChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    const handleAppointmentTypeChange = (event: SelectChangeEvent) => {
         const type = event.target.value as 'consultation' | 'return' | 'telemedicine';
         setNewAppointment(prev => ({ ...prev, type }));
     };

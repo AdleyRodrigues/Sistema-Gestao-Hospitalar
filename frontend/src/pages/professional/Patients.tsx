@@ -1,23 +1,24 @@
-import React, { useState } from 'react';
 import {
-    Box,
-    Typography,
-    Paper,
-    Grid,
-    Button,
-    TextField,
-    InputAdornment,
-    Card,
-    CardContent,
+    Add,
+    Event,
+    FolderOpen,
+    MedicalServices,
+    MoreVert,
+    Person,
+    Search
+} from '@mui/icons-material';
+import {
     Avatar,
+    Box,
+    Button,
     Chip,
     Divider,
-    List,
-    ListItem,
-    ListItemText,
-    ListItemAvatar,
+    Grid,
     IconButton,
-    Tabs,
+    InputAdornment,
+    Menu,
+    MenuItem,
+    Paper,
     Tab,
     Table,
     TableBody,
@@ -25,25 +26,11 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Menu,
-    MenuItem
+    Tabs,
+    TextField,
+    Typography
 } from '@mui/material';
-import {
-    Person,
-    Search,
-    Add,
-    Favorite,
-    CalendarMonth,
-    History,
-    ContactPhone,
-    Edit,
-    Visibility,
-    Message,
-    MoreVert,
-    FolderOpen,
-    Event,
-    MedicalServices
-} from '@mui/icons-material';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface Patient {

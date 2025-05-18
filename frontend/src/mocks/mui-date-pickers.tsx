@@ -1,13 +1,26 @@
 import React from 'react';
-import { TextField } from '@mui/material';
+import { TextField, TextFieldProps } from '@mui/material';
+
+// Interfaces para os props dos componentes
+interface DatePickerProps extends Omit<TextFieldProps, 'onChange' | 'value'> {
+    label?: string;
+    value?: Date | null;
+    onChange?: (date: Date | null) => void;
+}
+
+interface TimePickerProps extends Omit<TextFieldProps, 'onChange' | 'value'> {
+    label?: string;
+    value?: Date | null;
+    onChange?: (date: Date | null) => void;
+}
 
 // Mock do DatePicker
-export const DatePicker = ({ label, value, onChange, ...props }: any) => {
+export const DatePicker = ({ label, value, onChange, ...props }: DatePickerProps) => {
     return (
         <TextField
             label={label}
             type="date"
-            value={value instanceof Date ? value.toISOString().split('T')[0] : value}
+            value={value instanceof Date ? value.toISOString().split('T')[0] : value || ''}
             onChange={(e) => {
                 if (onChange) {
                     onChange(new Date(e.target.value));
@@ -19,12 +32,12 @@ export const DatePicker = ({ label, value, onChange, ...props }: any) => {
 };
 
 // Mock do TimePicker
-export const TimePicker = ({ label, value, onChange, ...props }: any) => {
+export const TimePicker = ({ label, value, onChange, ...props }: TimePickerProps) => {
     return (
         <TextField
             label={label}
             type="time"
-            value={value instanceof Date ? `${value.getHours()}:${value.getMinutes()}` : value}
+            value={value instanceof Date ? `${value.getHours()}:${value.getMinutes().toString().padStart(2, '0')}` : value || ''}
             onChange={(e) => {
                 if (onChange) {
                     const [hours, minutes] = e.target.value.split(':').map(Number);

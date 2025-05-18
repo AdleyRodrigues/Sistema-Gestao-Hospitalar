@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Box, Typography, Grid, Paper, Divider, Button, Stack, Card, CardContent, Tooltip } from '@mui/material';
 import { CalendarMonth, Person, Assignment, VideoCall } from '@mui/icons-material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../../hooks/useAuth';
 
 // Dados mockados para o dashboard
@@ -138,7 +138,7 @@ const ProfessionalDashboard = () => {
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" />
                                     <YAxis />
-                                    <Tooltip />
+                                    <ChartTooltip />
                                     <Line type="monotone" dataKey="pacientes" stroke="#00C853" activeDot={{ r: 8 }} />
                                 </LineChart>
                             </ResponsiveContainer>

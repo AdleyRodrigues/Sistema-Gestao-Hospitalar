@@ -1,23 +1,22 @@
-import React, { useState } from 'react';
+import {
+    ExitToApp,
+    Menu as MenuIcon,
+    Notifications,
+    Person,
+    Settings
+} from '@mui/icons-material';
 import {
     AppBar,
-    Toolbar,
-    Typography,
-    Button,
-    IconButton,
     Avatar,
+    Divider,
+    IconButton,
+    ListItemIcon,
     Menu,
     MenuItem,
-    Divider,
-    ListItemIcon
+    Toolbar,
+    Typography
 } from '@mui/material';
-import {
-    Menu as MenuIcon,
-    Person,
-    ExitToApp,
-    Settings,
-    Notifications
-} from '@mui/icons-material';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
