@@ -56,6 +56,8 @@ import {
 } from '@mui/material';
 import { SelectChangeEvent } from '@mui/material/Select';
 import React, { useState } from 'react';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useNavigate } from 'react-router-dom';
 
 interface TeleconsultationAppointment {
@@ -73,6 +75,9 @@ interface TeleconsultationAppointment {
 
 const ProfessionalTelemedicine = () => {
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isExtraSmall = useMediaQuery('(max-width:400px)');
+    const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
     const [selectedTab, setSelectedTab] = useState(0);
     const [openConsultation, setOpenConsultation] = useState<TeleconsultationAppointment | null>(null);
     const [openSettings, setOpenSettings] = useState(false);
@@ -198,16 +203,37 @@ const ProfessionalTelemedicine = () => {
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" component="h1" gutterBottom>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: isSmall ? 'column' : 'row',
+                justifyContent: 'space-between',
+                alignItems: isSmall ? 'flex-start' : 'center',
+                mb: isSmall ? 2 : 3,
+                gap: isSmall ? 2 : 0
+            }}>
+                <Typography
+                    variant={isExtraSmall ? "h5" : "h4"}
+                    component="h1"
+                    gutterBottom={isSmall}
+                >
                     Telemedicina
                 </Typography>
-                <Box>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: isExtraSmall ? 'column' : 'row',
+                    width: isExtraSmall ? '100%' : 'auto',
+                    gap: isExtraSmall ? 1 : 0
+                }}>
                     <Button
                         variant="outlined"
                         startIcon={<Settings />}
-                        sx={{ mr: 1 }}
+                        sx={{
+                            mr: isExtraSmall ? 0 : 1,
+                            mb: isExtraSmall ? 1 : 0,
+                            width: isExtraSmall ? '100%' : 'auto'
+                        }}
                         onClick={handleOpenSettings}
+                        size={isExtraSmall ? "small" : "medium"}
                     >
                         Configurações
                     </Button>
@@ -215,15 +241,17 @@ const ProfessionalTelemedicine = () => {
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => navigate('/professional/schedule/new?type=telemedicine')}
+                        size={isExtraSmall ? "small" : "medium"}
+                        sx={{ width: isExtraSmall ? '100%' : 'auto' }}
                     >
                         Nova Teleconsulta
                     </Button>
                 </Box>
             </Box>
 
-            <Grid container spacing={3}>
+            <Grid container spacing={isSmall ? 2 : 3}>
                 <Grid item xs={12} md={8}>
-                    <Paper elevation={2} sx={{ p: 0 }}>
+                    <Paper elevation={2} sx={{ p: 0, overflow: 'hidden' }}>
                         <Tabs
                             value={selectedTab}
                             onChange={handleTabChange}
@@ -234,16 +262,25 @@ const ProfessionalTelemedicine = () => {
                             <Tab icon={<History />} label="HISTÓRICO" />
                         </Tabs>
 
-                        <Box sx={{ p: 3 }}>
+                        <Box sx={{ p: isExtraSmall ? 2 : 3 }}>
                             {selectedTab === 0 && (
                                 <>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                        <Typography variant="h6">
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexDirection: isExtraSmall ? 'column' : 'row',
+                                        justifyContent: 'space-between',
+                                        alignItems: isExtraSmall ? 'flex-start' : 'center',
+                                        mb: isSmall ? 2 : 3,
+                                        gap: isExtraSmall ? 1 : 0
+                                    }}>
+                                        <Typography variant={isExtraSmall ? "subtitle1" : "h6"}>
                                             Consultas de Hoje
                                         </Typography>
                                         <Button
                                             variant="outlined"
                                             startIcon={<PersonAdd />}
+                                            size={isExtraSmall ? "small" : "medium"}
+                                            sx={{ width: isExtraSmall ? '100%' : 'auto' }}
                                         >
                                             Adicionar Consulta
                                         </Button>
@@ -252,12 +289,22 @@ const ProfessionalTelemedicine = () => {
                                     {filteredAppointments.map((consultation) => (
                                         <Card key={consultation.id} variant="outlined" sx={{ mb: 2 }}>
                                             <CardContent>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Box sx={{
+                                                    display: 'flex',
+                                                    flexDirection: isExtraSmall ? 'column' : 'row',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: isExtraSmall ? 'flex-start' : 'center',
+                                                    gap: isExtraSmall ? 1.5 : 0
+                                                }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                                                         <Avatar
                                                             src={consultation.image}
                                                             alt={consultation.patient}
-                                                            sx={{ width: 56, height: 56, mr: 2 }}
+                                                            sx={{
+                                                                width: isExtraSmall ? 48 : 56,
+                                                                height: isExtraSmall ? 48 : 56,
+                                                                mr: 2
+                                                            }}
                                                         />
                                                         <Box>
                                                             <Typography variant="h6">
@@ -268,7 +315,12 @@ const ProfessionalTelemedicine = () => {
                                                             </Typography>
                                                         </Box>
                                                     </Box>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        width: isExtraSmall ? '100%' : 'auto',
+                                                        justifyContent: isExtraSmall ? 'space-between' : 'flex-end'
+                                                    }}>
                                                         <Chip
                                                             label={consultation.status}
                                                             color={consultation.status === 'Confirmada' ? 'success' : 'warning'}
@@ -292,7 +344,12 @@ const ProfessionalTelemedicine = () => {
                                                     </Typography>
                                                 </Box>
 
-                                                <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+                                                <Box sx={{
+                                                    mt: 2,
+                                                    display: 'flex',
+                                                    flexDirection: isExtraSmall ? 'column' : 'row',
+                                                    gap: isExtraSmall ? 1 : 2
+                                                }}>
                                                     <Button
                                                         variant="contained"
                                                         startIcon={<VideoCall />}
@@ -317,14 +374,22 @@ const ProfessionalTelemedicine = () => {
 
                             {selectedTab === 1 && (
                                 <>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                        <Typography variant="h6">
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexDirection: isExtraSmall ? 'column' : 'row',
+                                        justifyContent: 'space-between',
+                                        alignItems: isExtraSmall ? 'flex-start' : 'center',
+                                        mb: isSmall ? 2 : 3,
+                                        gap: isExtraSmall ? 1 : 0
+                                    }}>
+                                        <Typography variant={isExtraSmall ? "subtitle1" : "h6"}>
                                             Sua Sala Virtual
                                         </Typography>
                                         <Chip
                                             label={isAvailable ? 'Disponível' : 'Indisponível'}
                                             color={isAvailable ? 'success' : 'error'}
                                             icon={isAvailable ? <CheckCircle /> : <Warning />}
+                                            size={isExtraSmall ? "small" : "medium"}
                                         />
                                     </Box>
 
@@ -378,7 +443,13 @@ const ProfessionalTelemedicine = () => {
                                                 }}
                                             />
 
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Box sx={{
+                                                display: 'flex',
+                                                flexDirection: isExtraSmall ? 'column' : 'row',
+                                                justifyContent: 'space-between',
+                                                alignItems: isExtraSmall ? 'flex-start' : 'center',
+                                                gap: isExtraSmall ? 1 : 0
+                                            }}>
                                                 <FormControlLabel
                                                     control={
                                                         <Switch
@@ -409,12 +480,27 @@ const ProfessionalTelemedicine = () => {
                                             .map(patient => (
                                                 <Card key={patient.id} variant="outlined" sx={{ mb: 2 }}>
                                                     <CardContent sx={{ p: 2 }}>
-                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        <Box sx={{
+                                                            display: 'flex',
+                                                            flexDirection: isExtraSmall ? 'column' : 'row',
+                                                            justifyContent: 'space-between',
+                                                            alignItems: isExtraSmall ? 'flex-start' : 'center',
+                                                            gap: isExtraSmall ? 1 : 0,
+                                                            width: '100%'
+                                                        }}>
+                                                            <Box sx={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                width: '100%'
+                                                            }}>
                                                                 <Avatar
                                                                     src={patient.image}
                                                                     alt={patient.patient}
-                                                                    sx={{ width: 40, height: 40, mr: 2 }}
+                                                                    sx={{
+                                                                        width: isExtraSmall ? 36 : 40,
+                                                                        height: isExtraSmall ? 36 : 40,
+                                                                        mr: 2
+                                                                    }}
                                                                 />
                                                                 <Box>
                                                                     <Typography variant="body1">
@@ -429,6 +515,10 @@ const ProfessionalTelemedicine = () => {
                                                                 variant="contained"
                                                                 size="small"
                                                                 endIcon={<ArrowForward />}
+                                                                sx={{
+                                                                    width: isExtraSmall ? '100%' : 'auto',
+                                                                    mt: isExtraSmall ? 1 : 0
+                                                                }}
                                                             >
                                                                 Admitir
                                                             </Button>
@@ -448,8 +538,13 @@ const ProfessionalTelemedicine = () => {
 
                             {selectedTab === 2 && (
                                 <>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                        <Typography variant="h6">
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        mb: isSmall ? 2 : 3
+                                    }}>
+                                        <Typography variant={isExtraSmall ? "subtitle1" : "h6"}>
                                             Histórico de Consultas
                                         </Typography>
                                     </Box>
@@ -458,11 +553,22 @@ const ProfessionalTelemedicine = () => {
                                         {pastConsultations.map((consultation) => (
                                             <Card key={consultation.id} variant="outlined" sx={{ mb: 2 }}>
                                                 <CardContent>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        alignItems: isExtraSmall ? 'flex-start' : 'center',
+                                                        mb: 2,
+                                                        flexDirection: isExtraSmall ? 'column' : 'row',
+                                                        gap: isExtraSmall ? 1 : 0
+                                                    }}>
                                                         <Avatar
                                                             src={consultation.image}
                                                             alt={consultation.patient}
-                                                            sx={{ width: 48, height: 48, mr: 2 }}
+                                                            sx={{
+                                                                width: isExtraSmall ? 40 : 48,
+                                                                height: isExtraSmall ? 40 : 48,
+                                                                mr: isExtraSmall ? 0 : 2,
+                                                                mb: isExtraSmall ? 1 : 0
+                                                            }}
                                                         />
                                                         <Box sx={{ flexGrow: 1 }}>
                                                             <Typography variant="subtitle1">
@@ -490,7 +596,11 @@ const ProfessionalTelemedicine = () => {
                                                         </Typography>
                                                     </Box>
 
-                                                    <Box sx={{ display: 'flex', gap: 2 }}>
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        gap: isExtraSmall ? 1 : 2,
+                                                        flexWrap: isExtraSmall ? 'wrap' : 'nowrap'
+                                                    }}>
                                                         <Button
                                                             variant="outlined"
                                                             size="small"
@@ -647,6 +757,12 @@ const ProfessionalTelemedicine = () => {
                 onClose={handleCloseConsultation}
                 maxWidth="md"
                 fullWidth
+                sx={{
+                    '& .MuiDialog-paper': {
+                        m: isExtraSmall ? 1 : 2,
+                        width: isExtraSmall ? 'calc(100% - 16px)' : undefined
+                    }
+                }}
             >
                 {openConsultation && (
                     <>
@@ -660,16 +776,17 @@ const ProfessionalTelemedicine = () => {
                                 </IconButton>
                             </Box>
                         </DialogTitle>
-                        <DialogContent>
+                        <DialogContent sx={{ p: isExtraSmall ? 2 : 3 }}>
                             <Paper
                                 sx={{
-                                    height: 400,
+                                    height: isExtraSmall ? 250 : 400,
                                     display: 'flex',
                                     justifyContent: 'center',
                                     alignItems: 'center',
                                     bgcolor: 'black',
                                     color: 'white',
-                                    mb: 2
+                                    mb: 2,
+                                    borderRadius: 1
                                 }}
                             >
                                 <Typography variant="h5">
@@ -678,7 +795,7 @@ const ProfessionalTelemedicine = () => {
                                 </Typography>
                             </Paper>
 
-                            <Grid container spacing={2}>
+                            <Grid container spacing={isExtraSmall ? 1.5 : 2}>
                                 <Grid item xs={12} md={6}>
                                     <TextField
                                         label="Anotações da Consulta"
@@ -743,6 +860,12 @@ const ProfessionalTelemedicine = () => {
                 onClose={handleCloseSettings}
                 maxWidth="sm"
                 fullWidth
+                sx={{
+                    '& .MuiDialog-paper': {
+                        m: isExtraSmall ? 1 : 2,
+                        width: isExtraSmall ? 'calc(100% - 16px)' : undefined
+                    }
+                }}
             >
                 <DialogTitle>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -754,11 +877,11 @@ const ProfessionalTelemedicine = () => {
                         </IconButton>
                     </Box>
                 </DialogTitle>
-                <DialogContent>
-                    <Typography variant="subtitle1" gutterBottom sx={{ mt: 1 }}>
+                <DialogContent sx={{ p: isExtraSmall ? 2 : 3 }}>
+                    <Typography variant="subtitle1" gutterBottom sx={{ mt: isExtraSmall ? 0.5 : 1 }}>
                         Disponibilidade para Teleconsultas
                     </Typography>
-                    <Grid container spacing={2}>
+                    <Grid container spacing={isExtraSmall ? 1.5 : 2}>
                         <Grid item xs={12} md={6}>
                             <TextField
                                 fullWidth

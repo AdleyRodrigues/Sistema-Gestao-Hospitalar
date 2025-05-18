@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {
     Box,
     Button,
@@ -24,6 +26,9 @@ import { useAuth } from '../../hooks/useAuth';
 
 const DataDeletionRequest = () => {
     useAuth();
+    const theme = useTheme();
+    const isExtraSmall = useMediaQuery('(max-width:400px)');
+    const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
     const [openDialog, setOpenDialog] = useState(false);
     const [confirmDialog, setConfirmDialog] = useState(false);
     const [deleteReason, setDeleteReason] = useState('');
@@ -87,30 +92,57 @@ const DataDeletionRequest = () => {
 
     return (
         <Box>
-            <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-                <Typography variant="h5" gutterBottom color="primary">
+            <Paper elevation={2} sx={{ p: isExtraSmall ? 2 : isSmall ? 2.5 : 3, mb: isSmall ? 3 : 4 }}>
+                <Typography
+                    variant={isExtraSmall ? "h6" : "h5"}
+                    gutterBottom
+                    color="primary"
+                >
                     Exclusão de Dados Pessoais
                 </Typography>
-                <Divider sx={{ mb: 3 }} />
+                <Divider sx={{ mb: isSmall ? 2 : 3 }} />
 
-                <Typography variant="body1" paragraph>
+                <Typography
+                    variant="body1"
+                    paragraph
+                    sx={{ fontSize: isExtraSmall ? '0.9rem' : 'inherit' }}
+                >
                     Conforme previsto na Lei Geral de Proteção de Dados (LGPD), você tem o direito de solicitar
                     a exclusão dos seus dados pessoais do nosso sistema.
                 </Typography>
 
-                <Typography variant="body1" paragraph>
+                <Typography
+                    variant="body1"
+                    paragraph
+                    sx={{ fontSize: isExtraSmall ? '0.9rem' : 'inherit' }}
+                >
                     Ao solicitar a exclusão, é importante entender:
                 </Typography>
 
-                <Box component="ul" sx={{ pl: 4, mb: 3 }}>
-                    <Typography component="li" variant="body1" paragraph>
+                <Box component="ul" sx={{ pl: isExtraSmall ? 3 : 4, mb: isSmall ? 2 : 3 }}>
+                    <Typography
+                        component="li"
+                        variant="body1"
+                        paragraph
+                        sx={{ fontSize: isExtraSmall ? '0.9rem' : 'inherit', mb: isExtraSmall ? 1 : 2 }}
+                    >
                         A exclusão pode levar até 30 dias para ser processada.
                     </Typography>
-                    <Typography component="li" variant="body1" paragraph>
+                    <Typography
+                        component="li"
+                        variant="body1"
+                        paragraph
+                        sx={{ fontSize: isExtraSmall ? '0.9rem' : 'inherit', mb: isExtraSmall ? 1 : 2 }}
+                    >
                         Alguns dados não poderão ser excluídos devido a obrigações legais ou regulatórias
                         (como registros médicos que devem ser mantidos por pelo menos 20 anos).
                     </Typography>
-                    <Typography component="li" variant="body1" paragraph>
+                    <Typography
+                        component="li"
+                        variant="body1"
+                        paragraph
+                        sx={{ fontSize: isExtraSmall ? '0.9rem' : 'inherit', mb: isExtraSmall ? 1 : 2 }}
+                    >
                         Sua conta e acesso ao sistema serão desativados permanentemente.
                     </Typography>
                 </Box>
@@ -126,16 +158,24 @@ const DataDeletionRequest = () => {
             </Paper>
 
             {/* Informações sobre dados armazenados */}
-            <Card variant="outlined" sx={{ mb: 4 }}>
-                <CardContent>
-                    <Typography variant="h6" gutterBottom color="primary">
+            <Card variant="outlined" sx={{ mb: isSmall ? 3 : 4 }}>
+                <CardContent sx={{ p: isExtraSmall ? 2 : 3 }}>
+                    <Typography
+                        variant={isExtraSmall ? "subtitle1" : "h6"}
+                        gutterBottom
+                        color="primary"
+                    >
                         Dados Armazenados no Sistema
                     </Typography>
 
-                    <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+                    <Typography
+                        variant={isExtraSmall ? "subtitle2" : "subtitle1"}
+                        gutterBottom
+                        sx={{ mt: isSmall ? 1.5 : 2 }}
+                    >
                         Dados Pessoais:
                     </Typography>
-                    <Box component="ul" sx={{ pl: 4, mb: 3 }}>
+                    <Box component="ul" sx={{ pl: isExtraSmall ? 3 : 4, mb: isSmall ? 2 : 3 }}>
                         <Typography component="li" variant="body2">Nome Completo</Typography>
                         <Typography component="li" variant="body2">CPF/RG</Typography>
                         <Typography component="li" variant="body2">Data de Nascimento</Typography>
@@ -144,10 +184,13 @@ const DataDeletionRequest = () => {
                         <Typography component="li" variant="body2">Email</Typography>
                     </Box>
 
-                    <Typography variant="subtitle1" gutterBottom>
+                    <Typography
+                        variant={isExtraSmall ? "subtitle2" : "subtitle1"}
+                        gutterBottom
+                    >
                         Dados de Saúde:
                     </Typography>
-                    <Box component="ul" sx={{ pl: 4, mb: 3 }}>
+                    <Box component="ul" sx={{ pl: isExtraSmall ? 3 : 4, mb: isSmall ? 2 : 3 }}>
                         <Typography component="li" variant="body2">Histórico Médico</Typography>
                         <Typography component="li" variant="body2">Resultados de Exames</Typography>
                         <Typography component="li" variant="body2">Histórico de Consultas</Typography>
@@ -155,10 +198,13 @@ const DataDeletionRequest = () => {
                         <Typography component="li" variant="body2">Medicações Receitadas</Typography>
                     </Box>
 
-                    <Typography variant="subtitle1" gutterBottom>
+                    <Typography
+                        variant={isExtraSmall ? "subtitle2" : "subtitle1"}
+                        gutterBottom
+                    >
                         Dados de Uso do Sistema:
                     </Typography>
-                    <Box component="ul" sx={{ pl: 4 }}>
+                    <Box component="ul" sx={{ pl: isExtraSmall ? 3 : 4 }}>
                         <Typography component="li" variant="body2">Logs de Acesso</Typography>
                         <Typography component="li" variant="body2">Preferências de Usuário</Typography>
                         <Typography component="li" variant="body2">Histórico de Agendamentos</Typography>
@@ -171,11 +217,20 @@ const DataDeletionRequest = () => {
                 open={openDialog}
                 onClose={handleCloseDialog}
                 aria-labelledby="deletion-dialog-title"
+                maxWidth="sm"
+                fullWidth
+                fullScreen={isExtraSmall}
+                PaperProps={{
+                    sx: {
+                        borderRadius: isExtraSmall ? 0 : 2,
+                        m: isExtraSmall ? 0 : isSmall ? 1 : 2
+                    }
+                }}
             >
-                <DialogTitle id="deletion-dialog-title">
+                <DialogTitle id="deletion-dialog-title" sx={{ pt: isExtraSmall ? 2 : 3 }}>
                     Solicitar Exclusão de Dados
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent sx={{ px: isExtraSmall ? 2 : 3 }}>
                     <DialogContentText component="div" sx={{ mb: 3 }}>
                         <Typography variant="body1" paragraph>
                             Esta ação irá iniciar o processo de exclusão dos seus dados pessoais do nosso sistema,
@@ -213,8 +268,17 @@ const DataDeletionRequest = () => {
                         />
                     </FormGroup>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 3 }}>
-                    <Button onClick={handleCloseDialog} color="primary">
+                <DialogActions sx={{
+                    px: isExtraSmall ? 2 : 3,
+                    pb: isExtraSmall ? 2 : 3,
+                    flexDirection: isExtraSmall ? 'column' : 'row',
+                    gap: isExtraSmall ? 1 : 0
+                }}>
+                    <Button
+                        onClick={handleCloseDialog}
+                        color="primary"
+                        fullWidth={isExtraSmall}
+                    >
                         Cancelar
                     </Button>
                     <Button
@@ -222,6 +286,7 @@ const DataDeletionRequest = () => {
                         color="error"
                         variant="contained"
                         disabled={!understand}
+                        fullWidth={isExtraSmall}
                     >
                         Continuar
                     </Button>
@@ -233,17 +298,35 @@ const DataDeletionRequest = () => {
                 open={confirmDialog}
                 onClose={handleCloseConfirmDialog}
                 aria-labelledby="confirmation-dialog-title"
+                maxWidth="xs"
+                fullWidth
+                fullScreen={isExtraSmall}
+                PaperProps={{
+                    sx: {
+                        borderRadius: isExtraSmall ? 0 : 2,
+                        m: isExtraSmall ? 0 : isSmall ? 1 : 2
+                    }
+                }}
             >
-                <DialogTitle id="confirmation-dialog-title" color="error">
+                <DialogTitle id="confirmation-dialog-title" color="error" sx={{ pt: isExtraSmall ? 2 : 3 }}>
                     Confirmação Final
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent sx={{ px: isExtraSmall ? 2 : 3 }}>
                     <DialogContentText>
                         Tem certeza que deseja solicitar a exclusão de seus dados? Esta ação não pode ser desfeita.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 3 }}>
-                    <Button onClick={handleCloseConfirmDialog} color="primary">
+                <DialogActions sx={{
+                    px: isExtraSmall ? 2 : 3,
+                    pb: isExtraSmall ? 2 : 3,
+                    flexDirection: isExtraSmall ? 'column' : 'row',
+                    gap: isExtraSmall ? 1 : 0
+                }}>
+                    <Button
+                        onClick={handleCloseConfirmDialog}
+                        color="primary"
+                        fullWidth={isExtraSmall}
+                    >
                         Cancelar
                     </Button>
                     <Button
@@ -251,7 +334,8 @@ const DataDeletionRequest = () => {
                         color="error"
                         variant="contained"
                         disabled={loading}
-                        startIcon={loading && <CircularProgress size={20} color="inherit" />}
+                        startIcon={loading && <CircularProgress size={isExtraSmall ? 16 : 20} color="inherit" />}
+                        fullWidth={isExtraSmall}
                     >
                         {loading ? 'Processando...' : 'Confirmar Exclusão'}
                     </Button>

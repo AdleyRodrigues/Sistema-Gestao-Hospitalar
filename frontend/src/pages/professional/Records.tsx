@@ -44,6 +44,8 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import React, { useEffect, useState } from 'react';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useAuth } from '../../hooks/useAuth';
 import { api } from '../../services/api';
 import { MedicalRecordEntry, Patient, Prescription } from '../../types/medicalRecord';
@@ -342,16 +344,26 @@ const ProfessionalRecords = () => {
         return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR });
     };
 
+    const theme = useTheme();
+    const isExtraSmall = useMediaQuery('(max-width:400px)');
+    const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
     return (
         <Box>
-            <Typography variant="h4" gutterBottom>
+            <Typography
+                variant={isExtraSmall ? "h5" : "h4"}
+                gutterBottom
+            >
                 Gerenciamento de Prontuários
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+            <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ mb: isSmall ? 2 : 4 }}
+            >
                 Acesse e gerencie os prontuários eletrônicos dos pacientes.
             </Typography>
 
-            <Paper elevation={2} sx={{ mb: 4 }}>
+            <Paper elevation={2} sx={{ mb: isSmall ? 3 : 4 }}>
                 <Tabs
                     value={tabValue}
                     onChange={handleTabChange}
@@ -365,7 +377,7 @@ const ProfessionalRecords = () => {
                 </Tabs>
 
                 {/* Aba de busca de pacientes */}
-                <Box role="tabpanel" hidden={tabValue !== 0} sx={{ p: 3 }}>
+                <Box role="tabpanel" hidden={tabValue !== 0} sx={{ p: isExtraSmall ? 2 : 3 }}>
                     <TextField
                         fullWidth
                         variant="outlined"
@@ -387,7 +399,7 @@ const ProfessionalRecords = () => {
                             <CircularProgress />
                         </Box>
                     ) : (
-                        <Grid container spacing={2}>
+                        <Grid container spacing={isExtraSmall ? 1.5 : 2}>
                             {filteredPatients.length > 0 ? (
                                 filteredPatients.map(patient => (
                                     <Grid item xs={12} sm={6} md={4} key={patient.id}>
@@ -405,14 +417,32 @@ const ProfessionalRecords = () => {
                                         >
                                             <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                                    <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                                                        <PersonIcon />
+                                                    <Avatar
+                                                        sx={{
+                                                            bgcolor: 'primary.main',
+                                                            mr: 2,
+                                                            width: isExtraSmall ? 40 : 48,
+                                                            height: isExtraSmall ? 40 : 48
+                                                        }}
+                                                    >
+                                                        <PersonIcon fontSize={isExtraSmall ? "small" : "medium"} />
                                                     </Avatar>
                                                     <Box>
-                                                        <Typography variant="h6" component="div">
+                                                        <Typography
+                                                            variant={isExtraSmall ? "subtitle1" : "h6"}
+                                                            component="div"
+                                                        >
                                                             {patient.name}
                                                         </Typography>
-                                                        <Typography variant="body2" color="text.secondary">
+                                                        <Typography
+                                                            variant="body2"
+                                                            color="text.secondary"
+                                                            sx={{
+                                                                fontSize: isExtraSmall ? '0.75rem' : 'inherit',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis'
+                                                            }}
+                                                        >
                                                             {patient.email}
                                                         </Typography>
                                                     </Box>
@@ -456,17 +486,31 @@ const ProfessionalRecords = () => {
                 </Box>
 
                 {/* Aba de prontuário do paciente */}
-                <Box role="tabpanel" hidden={tabValue !== 1 || !selectedPatient} sx={{ p: 3 }}>
+                <Box role="tabpanel" hidden={tabValue !== 1 || !selectedPatient} sx={{ p: isExtraSmall ? 2 : 3 }}>
                     {selectedPatient && (
                         <>
-                            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{
+                                mb: isSmall ? 2 : 3,
+                                display: 'flex',
+                                flexDirection: isSmall ? 'column' : 'row',
+                                justifyContent: 'space-between',
+                                alignItems: isSmall ? 'flex-start' : 'center',
+                                gap: isSmall ? 2 : 0
+                            }}>
                                 <Box>
-                                    <Typography variant="h5" gutterBottom>
+                                    <Typography
+                                        variant={isExtraSmall ? "h6" : "h5"}
+                                        gutterBottom={!isExtraSmall}
+                                    >
                                         Prontuário de {selectedPatient.name}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        <strong>Data de Nascimento:</strong> {format(new Date(selectedPatient.birthDate), 'dd/MM/yyyy')} |
-                                        <strong> Tipo Sanguíneo:</strong> {selectedPatient.bloodType || 'Não informado'}
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ fontSize: isExtraSmall ? '0.75rem' : 'inherit' }}
+                                    >
+                                        <strong>Data de Nascimento:</strong> {format(new Date(selectedPatient.birthDate), 'dd/MM/yyyy')}
+                                        {!isExtraSmall && <> | <strong>Tipo Sanguíneo:</strong> {selectedPatient.bloodType || 'Não informado'}</>}
                                     </Typography>
                                 </Box>
                                 <Button
@@ -474,6 +518,7 @@ const ProfessionalRecords = () => {
                                     color="primary"
                                     startIcon={<AddIcon />}
                                     onClick={() => handleOpenRecordDialog()}
+                                    size={isExtraSmall ? "small" : "medium"}
                                 >
                                     Novo Registro
                                 </Button>
@@ -487,9 +532,19 @@ const ProfessionalRecords = () => {
                                 <Grid container spacing={3}>
                                     {records.map(record => (
                                         <Grid item xs={12} key={record.id}>
-                                            <Paper elevation={1} sx={{ p: 3, mb: 2 }}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <Paper elevation={1} sx={{ p: isExtraSmall ? 2 : 3, mb: 2 }}>
+                                                <Box sx={{
+                                                    display: 'flex',
+                                                    flexDirection: isExtraSmall ? 'column' : 'row',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: isExtraSmall ? 'flex-start' : 'flex-start',
+                                                    gap: isExtraSmall ? 1 : 0
+                                                }}>
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'flex-start',
+                                                        width: isExtraSmall ? '100%' : 'auto'
+                                                    }}>
                                                         <Avatar
                                                             sx={{
                                                                 bgcolor:
@@ -498,16 +553,29 @@ const ProfessionalRecords = () => {
                                                                         : record.type === 'exam'
                                                                             ? 'secondary.main'
                                                                             : 'info.main',
-                                                                mr: 2
+                                                                mr: 2,
+                                                                width: isExtraSmall ? 36 : 40,
+                                                                height: isExtraSmall ? 36 : 40
                                                             }}
                                                         >
-                                                            {record.type === 'consultation' ? <MedicalServicesIcon /> :
-                                                                record.type === 'exam' ? <BiotechIcon /> :
-                                                                    <LocalHospitalIcon />}
+                                                            {record.type === 'consultation' ? <MedicalServicesIcon fontSize={isExtraSmall ? "small" : "medium"} /> :
+                                                                record.type === 'exam' ? <BiotechIcon fontSize={isExtraSmall ? "small" : "medium"} /> :
+                                                                    <LocalHospitalIcon fontSize={isExtraSmall ? "small" : "medium"} />}
                                                         </Avatar>
-                                                        <Box>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                <Typography variant="h6">
+                                                        <Box sx={{ flex: 1 }}>
+                                                            <Box sx={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 1,
+                                                                flexWrap: isExtraSmall ? 'wrap' : 'nowrap'
+                                                            }}>
+                                                                <Typography
+                                                                    variant={isExtraSmall ? "subtitle1" : "h6"}
+                                                                    sx={{
+                                                                        mr: isExtraSmall ? 0 : 1,
+                                                                        lineHeight: isExtraSmall ? 1.3 : 'inherit'
+                                                                    }}
+                                                                >
                                                                     {record.title}
                                                                 </Typography>
                                                                 <Chip
@@ -522,25 +590,33 @@ const ProfessionalRecords = () => {
                                                                     }
                                                                 />
                                                             </Box>
-                                                            <Typography variant="body2" color="text.secondary">
+                                                            <Typography
+                                                                variant="body2"
+                                                                color="text.secondary"
+                                                                sx={{ fontSize: isExtraSmall ? '0.75rem' : 'inherit' }}
+                                                            >
                                                                 {formatDate(record.date)}
                                                             </Typography>
                                                         </Box>
                                                     </Box>
-                                                    <Box>
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        justifyContent: isExtraSmall ? 'flex-end' : 'flex-end',
+                                                        width: isExtraSmall ? '100%' : 'auto'
+                                                    }}>
                                                         <IconButton
                                                             color="primary"
                                                             onClick={() => handleOpenRecordDialog(record)}
                                                             size="small"
                                                         >
-                                                            <EditIcon />
+                                                            <EditIcon fontSize={isExtraSmall ? "small" : "medium"} />
                                                         </IconButton>
                                                     </Box>
                                                 </Box>
 
-                                                <Divider sx={{ my: 2 }} />
+                                                <Divider sx={{ my: isExtraSmall ? 1.5 : 2 }} />
 
-                                                <Grid container spacing={2}>
+                                                <Grid container spacing={isExtraSmall ? 1.5 : 2}>
                                                     <Grid item xs={12}>
                                                         <Typography variant="body1" paragraph>
                                                             {record.description}
@@ -595,8 +671,12 @@ const ProfessionalRecords = () => {
                                                 {/* Prescrições */}
                                                 {record.prescriptions && record.prescriptions.length > 0 && (
                                                     <>
-                                                        <Divider sx={{ my: 2 }} />
-                                                        <Typography variant="subtitle1" color="primary" sx={{ mb: 1 }}>
+                                                        <Divider sx={{ my: isExtraSmall ? 1.5 : 2 }} />
+                                                        <Typography
+                                                            variant={isExtraSmall ? "subtitle2" : "subtitle1"}
+                                                            color="primary"
+                                                            sx={{ mb: 1 }}
+                                                        >
                                                             Prescrições Médicas
                                                         </Typography>
 
@@ -604,7 +684,7 @@ const ProfessionalRecords = () => {
                                                             {record.prescriptions.map(prescription => (
                                                                 <Grid item xs={12} key={prescription.id}>
                                                                     <Card variant="outlined" sx={{ mb: 1 }}>
-                                                                        <CardContent>
+                                                                        <CardContent sx={{ p: isExtraSmall ? 1.5 : 2 }}>
                                                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                                 <Typography variant="subtitle2">
                                                                                     Emitida em: {format(new Date(prescription.date), 'dd/MM/yyyy')}
@@ -646,17 +726,22 @@ const ProfessionalRecords = () => {
                                                     </>
                                                 )}
 
-                                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                                                <Box sx={{
+                                                    display: 'flex',
+                                                    justifyContent: 'flex-end',
+                                                    mt: isExtraSmall ? 1.5 : 2
+                                                }}>
                                                     <Button
                                                         variant="outlined"
-                                                        startIcon={<MedicalServicesIcon />}
+                                                        startIcon={<MedicalServicesIcon fontSize={isExtraSmall ? "small" : "medium"} />}
                                                         onClick={() => {
                                                             setSelectedRecord(record);
                                                             handleOpenPrescriptionDialog();
                                                         }}
                                                         sx={{ mr: 1 }}
+                                                        size={isExtraSmall ? "small" : "medium"}
                                                     >
-                                                        Emitir Prescrição
+                                                        {isExtraSmall ? "Prescrever" : "Emitir Prescrição"}
                                                     </Button>
                                                 </Box>
                                             </Paper>
@@ -689,12 +774,18 @@ const ProfessionalRecords = () => {
                 onClose={handleCloseRecordDialog}
                 maxWidth="md"
                 fullWidth
+                sx={{
+                    '& .MuiDialog-paper': {
+                        m: isExtraSmall ? 1 : 2,
+                        width: isExtraSmall ? 'calc(100% - 16px)' : undefined
+                    }
+                }}
             >
                 <DialogTitle>
                     {selectedRecord ? 'Editar Registro de Prontuário' : 'Novo Registro de Prontuário'}
                 </DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                <DialogContent sx={{ p: isExtraSmall ? 2 : 3 }}>
+                    <Grid container spacing={isExtraSmall ? 1.5 : 2} sx={{ mt: isExtraSmall ? 0.5 : 1 }}>
                         <Grid item xs={12} sm={6}>
                             <FormControl fullWidth>
                                 <InputLabel id="record-type-label">Tipo de Registro</InputLabel>
@@ -801,16 +892,22 @@ const ProfessionalRecords = () => {
                 onClose={handleClosePrescriptionDialog}
                 maxWidth="md"
                 fullWidth
+                sx={{
+                    '& .MuiDialog-paper': {
+                        m: isExtraSmall ? 1 : 2,
+                        width: isExtraSmall ? 'calc(100% - 16px)' : undefined
+                    }
+                }}
             >
                 <DialogTitle>
                     Nova Prescrição Médica
                 </DialogTitle>
-                <DialogContent>
-                    <Typography variant="subtitle2" color="primary" sx={{ mb: 2, mt: 1 }}>
+                <DialogContent sx={{ p: isExtraSmall ? 2 : 3 }}>
+                    <Typography variant="subtitle2" color="primary" sx={{ mb: isExtraSmall ? 1.5 : 2, mt: isExtraSmall ? 0.5 : 1 }}>
                         Adicionar Medicamentos
                     </Typography>
 
-                    <Grid container spacing={2}>
+                    <Grid container spacing={isExtraSmall ? 1.5 : 2}>
                         <Grid item xs={12} sm={6}>
                             <TextField
                                 fullWidth
@@ -882,11 +979,15 @@ const ProfessionalRecords = () => {
 
                     {newPrescription.medications && newPrescription.medications.length > 0 && (
                         <>
-                            <Typography variant="subtitle2" color="primary" sx={{ mt: 3, mb: 1 }}>
+                            <Typography variant="subtitle2" color="primary" sx={{ mt: isExtraSmall ? 2 : 3, mb: 1 }}>
                                 Medicamentos na Prescrição
                             </Typography>
 
-                            <List dense>
+                            <List dense sx={{
+                                '& .MuiListItem-root': {
+                                    py: isExtraSmall ? 0.5 : 1
+                                }
+                            }}>
                                 {newPrescription.medications.map((med, index) => (
                                     <ListItem
                                         key={index}
@@ -912,7 +1013,7 @@ const ProfessionalRecords = () => {
                         </>
                     )}
 
-                    <Typography variant="subtitle2" color="primary" sx={{ mt: 3, mb: 1 }}>
+                    <Typography variant="subtitle2" color="primary" sx={{ mt: isExtraSmall ? 2 : 3, mb: 1 }}>
                         Instruções Gerais
                     </Typography>
 

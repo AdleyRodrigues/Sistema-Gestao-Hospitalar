@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import {
     Add,
     Event,
@@ -5,12 +6,16 @@ import {
     MedicalServices,
     MoreVert,
     Person,
-    Search
+    Search,
+    Phone,
+    Email
 } from '@mui/icons-material';
 import {
     Avatar,
     Box,
     Button,
+    Card,
+    CardContent,
     Chip,
     Divider,
     Grid,
@@ -28,9 +33,10 @@ import {
     TableRow,
     Tabs,
     TextField,
-    Typography
+    Typography,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
-import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface Patient {
@@ -115,6 +121,10 @@ const mockPatients: Patient[] = [
 
 const ProfessionalPatients = () => {
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isExtraSmall = useMediaQuery('(max-width:400px)');
+    const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+
     const [searchTerm, setSearchTerm] = useState('');
     const [tabValue, setTabValue] = useState(0);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -170,27 +180,153 @@ const ProfessionalPatients = () => {
         }
     };
 
+    // Função para renderizar o card de paciente (para telas pequenas)
+    const renderPatientCard = (patient: Patient) => (
+        <Card
+            key={patient.id}
+            variant="outlined"
+            sx={{
+                mb: 2,
+                borderLeft: patient.status === 'active' ? '4px solid #10B981' : '4px solid #9CA3AF'
+            }}
+        >
+            <CardContent sx={{ p: isExtraSmall ? 1.5 : 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Avatar
+                            src={patient.avatar}
+                            sx={{
+                                width: isExtraSmall ? 40 : 48,
+                                height: isExtraSmall ? 40 : 48,
+                                mr: 1.5
+                            }}
+                        >
+                            {!patient.avatar && <Person />}
+                        </Avatar>
+                        <Box>
+                            <Typography variant="h6" sx={{ fontSize: isExtraSmall ? '1rem' : '1.1rem' }}>
+                                {patient.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {patient.age} anos ({patient.gender === 'M' ? 'Masculino' : 'Feminino'})
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <IconButton
+                        onClick={(e) => handleMenuOpen(e, patient)}
+                        size="small"
+                    >
+                        <MoreVert />
+                    </IconButton>
+                </Box>
+
+                <Divider sx={{ my: 1 }} />
+
+                <Grid container spacing={1} sx={{ mt: 0.5 }}>
+                    <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                            Convênio
+                        </Typography>
+                        <Typography variant="body2">{patient.healthInsurance}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                            Última Consulta
+                        </Typography>
+                        <Typography variant="body2">{patient.lastAppointment}</Typography>
+                    </Grid>
+                    <Grid item xs={12} sx={{ mt: 1 }}>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                            Próxima Consulta
+                        </Typography>
+                        <Typography variant="body2">
+                            {patient.nextAppointment || 'Não agendada'}
+                        </Typography>
+                    </Grid>
+                </Grid>
+
+                <Box sx={{ mt: 1.5, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    <Chip
+                        size="small"
+                        icon={<Phone fontSize="small" />}
+                        label={patient.phone}
+                        variant="outlined"
+                        sx={{ maxWidth: '100%', overflow: 'hidden' }}
+                    />
+                    {!isExtraSmall && (
+                        <Chip
+                            size="small"
+                            icon={<Email fontSize="small" />}
+                            label={patient.email}
+                            variant="outlined"
+                            sx={{ maxWidth: '100%', overflow: 'hidden' }}
+                        />
+                    )}
+                </Box>
+
+                <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<FolderOpen fontSize="small" />}
+                        onClick={() => {
+                            setSelectedPatient(patient);
+                            handleViewRecord();
+                        }}
+                        fullWidth
+                    >
+                        Prontuário
+                    </Button>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Event fontSize="small" />}
+                        onClick={() => {
+                            setSelectedPatient(patient);
+                            handleScheduleAppointment();
+                        }}
+                        fullWidth
+                    >
+                        Agendar
+                    </Button>
+                </Box>
+            </CardContent>
+        </Card>
+    );
+
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" component="h1" gutterBottom>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: isSmall ? 'column' : 'row',
+                justifyContent: 'space-between',
+                alignItems: isSmall ? 'flex-start' : 'center',
+                mb: isSmall ? 2 : 3,
+                gap: isSmall ? 2 : 0
+            }}>
+                <Typography
+                    variant={isExtraSmall ? "h5" : "h4"}
+                    component="h1"
+                    gutterBottom={isSmall}
+                >
                     Pacientes
                 </Typography>
                 <Button
                     variant="contained"
                     startIcon={<Add />}
                     onClick={() => navigate('/professional/patients/new')}
+                    size={isExtraSmall ? "small" : "medium"}
                 >
                     Novo Paciente
                 </Button>
             </Box>
 
-            <Paper sx={{ mb: 3, p: 2 }}>
-                <Grid container spacing={2} alignItems="center">
+            <Paper sx={{ mb: 3, p: { xs: isExtraSmall ? 1.5 : 2, sm: 2 } }}>
+                <Grid container spacing={isExtraSmall ? 1.5 : 2} alignItems="center">
                     <Grid item xs={12} md={6}>
                         <TextField
                             fullWidth
-                            placeholder="Buscar paciente por nome, e-mail, telefone..."
+                            placeholder={isExtraSmall ? "Buscar paciente..." : "Buscar paciente por nome, e-mail, telefone..."}
                             variant="outlined"
                             size="small"
                             value={searchTerm}
@@ -198,15 +334,19 @@ const ProfessionalPatients = () => {
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
-                                        <Search />
+                                        <Search fontSize={isExtraSmall ? "small" : "medium"} />
                                     </InputAdornment>
                                 ),
                             }}
                         />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <Button startIcon={<MedicalServices />} sx={{ mr: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+                            <Button
+                                startIcon={<MedicalServices />}
+                                sx={{ mr: 1 }}
+                                size={isExtraSmall ? "small" : "medium"}
+                            >
                                 Filtros
                             </Button>
                         </Box>
@@ -220,80 +360,105 @@ const ProfessionalPatients = () => {
                     onChange={handleTabChange}
                     variant="scrollable"
                     scrollButtons="auto"
+                    sx={{
+                        '& .MuiTab-root': {
+                            minWidth: { xs: isExtraSmall ? '80px' : '100px', sm: '120px' },
+                            fontSize: { xs: isExtraSmall ? '0.75rem' : '0.8rem', sm: '0.875rem' },
+                            py: { xs: 1, sm: 1.5 }
+                        }
+                    }}
                 >
                     <Tab label="Todos" />
                     <Tab label="Ativos" />
                     <Tab label="Inativos" />
-                    <Tab label="Com Consulta Agendada" />
+                    <Tab label={isExtraSmall ? "Agendados" : "Com Consulta Agendada"} />
                 </Tabs>
             </Paper>
 
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Paciente</TableCell>
-                            <TableCell>Idade</TableCell>
-                            <TableCell>Convênio</TableCell>
-                            <TableCell>Última Consulta</TableCell>
-                            <TableCell>Próxima Consulta</TableCell>
-                            <TableCell>Contato</TableCell>
-                            <TableCell align="center">Ações</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {filteredPatients.map((patient) => (
-                            <TableRow key={patient.id} hover>
-                                <TableCell>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Avatar src={patient.avatar} sx={{ mr: 2 }}>
-                                            {!patient.avatar && <Person />}
-                                        </Avatar>
-                                        <Box>
-                                            <Typography variant="body1">{patient.name}</Typography>
-                                            <Chip
-                                                size="small"
-                                                label={patient.status === 'active' ? 'Ativo' : 'Inativo'}
-                                                color={patient.status === 'active' ? 'success' : 'default'}
-                                                sx={{ mt: 0.5 }}
-                                            />
-                                        </Box>
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    {patient.age} anos ({patient.gender === 'M' ? 'Masculino' : 'Feminino'})
-                                </TableCell>
-                                <TableCell>{patient.healthInsurance}</TableCell>
-                                <TableCell>{patient.lastAppointment}</TableCell>
-                                <TableCell>
-                                    {patient.nextAppointment || '-'}
-                                </TableCell>
-                                <TableCell>
-                                    <Typography variant="body2">{patient.phone}</Typography>
-                                    <Typography variant="body2" color="textSecondary">{patient.email}</Typography>
-                                </TableCell>
-                                <TableCell align="center">
-                                    <IconButton
-                                        onClick={(e) => handleMenuOpen(e, patient)}
-                                        size="small"
-                                    >
-                                        <MoreVert />
-                                    </IconButton>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {filteredPatients.length === 0 && (
+            {/* Visualização em tabela para telas médias e grandes */}
+            {!isSmall && (
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
                             <TableRow>
-                                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                                    <Typography variant="body1" color="textSecondary">
-                                        Nenhum paciente encontrado com os critérios selecionados.
-                                    </Typography>
-                                </TableCell>
+                                <TableCell>Paciente</TableCell>
+                                <TableCell>Idade</TableCell>
+                                <TableCell>Convênio</TableCell>
+                                <TableCell>Última Consulta</TableCell>
+                                <TableCell>Próxima Consulta</TableCell>
+                                <TableCell>Contato</TableCell>
+                                <TableCell align="center">Ações</TableCell>
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                        </TableHead>
+                        <TableBody>
+                            {filteredPatients.map((patient) => (
+                                <TableRow key={patient.id} hover>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <Avatar src={patient.avatar} sx={{ mr: 2 }}>
+                                                {!patient.avatar && <Person />}
+                                            </Avatar>
+                                            <Box>
+                                                <Typography variant="body1">{patient.name}</Typography>
+                                                <Chip
+                                                    size="small"
+                                                    label={patient.status === 'active' ? 'Ativo' : 'Inativo'}
+                                                    color={patient.status === 'active' ? 'success' : 'default'}
+                                                    sx={{ mt: 0.5 }}
+                                                />
+                                            </Box>
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        {patient.age} anos ({patient.gender === 'M' ? 'Masculino' : 'Feminino'})
+                                    </TableCell>
+                                    <TableCell>{patient.healthInsurance}</TableCell>
+                                    <TableCell>{patient.lastAppointment}</TableCell>
+                                    <TableCell>
+                                        {patient.nextAppointment || '-'}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2">{patient.phone}</Typography>
+                                        <Typography variant="body2" color="textSecondary">{patient.email}</Typography>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <IconButton
+                                            onClick={(e) => handleMenuOpen(e, patient)}
+                                            size="small"
+                                        >
+                                            <MoreVert />
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {filteredPatients.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                                        <Typography variant="body1" color="textSecondary">
+                                            Nenhum paciente encontrado com os critérios selecionados.
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
+
+            {/* Visualização em cards para telas pequenas */}
+            {isSmall && (
+                <Box>
+                    {filteredPatients.map(patient => renderPatientCard(patient))}
+
+                    {filteredPatients.length === 0 && (
+                        <Paper sx={{ p: 3, textAlign: 'center' }}>
+                            <Typography variant="body1" color="textSecondary">
+                                Nenhum paciente encontrado com os critérios selecionados.
+                            </Typography>
+                        </Paper>
+                    )}
+                </Box>
+            )}
 
             <Menu
                 anchorEl={anchorEl}

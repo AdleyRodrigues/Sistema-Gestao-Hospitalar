@@ -34,6 +34,11 @@ const ProfessionalTelemedicine = lazy(() => import('../pages/professional/Teleme
 const PrivacyPolicy = lazy(() => import('../pages/privacy/PrivacyPolicy'));
 const PrivacySettings = lazy(() => import('../pages/privacy/PrivacySettings'));
 
+// Páginas de Perfil
+const AdminProfile = lazy(() => import('../pages/admin/Profile'));
+const ProfessionalProfile = lazy(() => import('../pages/professional/Profile'));
+const PatientProfile = lazy(() => import('../pages/patient/Profile'));
+
 // Layout protegido baseado no perfil do usuário
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
     const { isAuthenticated, user } = useAuth();
@@ -92,6 +97,16 @@ export default function Router() {
                     ),
                 },
                 {
+                    path: 'profile',
+                    element: (
+                        <ProtectedRoute allowedRoles={['patient']}>
+                            <Suspense fallback={null}>
+                                <PatientProfile />
+                            </Suspense>
+                        </ProtectedRoute>
+                    ),
+                },
+                {
                     path: 'appointments',
                     element: (
                         <ProtectedRoute allowedRoles={['patient']}>
@@ -144,6 +159,16 @@ export default function Router() {
                         <ProtectedRoute allowedRoles={['professional']}>
                             <Suspense fallback={null}>
                                 <ProfessionalDashboard />
+                            </Suspense>
+                        </ProtectedRoute>
+                    ),
+                },
+                {
+                    path: 'profile',
+                    element: (
+                        <ProtectedRoute allowedRoles={['professional']}>
+                            <Suspense fallback={null}>
+                                <ProfessionalProfile />
                             </Suspense>
                         </ProtectedRoute>
                     ),
@@ -216,6 +241,16 @@ export default function Router() {
                     ),
                 },
                 {
+                    path: 'profile',
+                    element: (
+                        <ProtectedRoute allowedRoles={['admin']}>
+                            <Suspense fallback={null}>
+                                <AdminProfile />
+                            </Suspense>
+                        </ProtectedRoute>
+                    ),
+                },
+                {
                     path: 'privacy-settings',
                     element: (
                         <ProtectedRoute allowedRoles={['admin']}>
@@ -233,6 +268,27 @@ export default function Router() {
             path: '/',
             element: <Navigate to="/login" replace />,
         },
+
+        // Rotas de teste para acesso direto aos perfis (para depuração)
+        {
+            path: 'test-profile/:role',
+            element: (
+                <Suspense fallback={null}>
+                    {/* Aqui verificamos o parâmetro e carregamos o perfil adequado */}
+                    {({ params }) => {
+                        const role = params.role;
+                        if (role === 'admin') {
+                            return <AdminProfile />;
+                        } else if (role === 'professional') {
+                            return <ProfessionalProfile />;
+                        } else {
+                            return <PatientProfile />;
+                        }
+                    }}
+                </Suspense>
+            ),
+        },
+
         {
             path: '*',
             element: <Navigate to="/login" replace />,

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../services/api';
+import ProfileNavHelper from '../../../components/ProfileNavHelper';
 
 // Tipos de dados
 interface Appointment {
@@ -329,6 +330,9 @@ const PatientDashboard = () => {
                     </Paper>
                 </Grid>
             </Grid>
+
+            {/* Adicionar o helper de navegação para depuração */}
+            <ProfileNavHelper />
         </Box>
     );
 };

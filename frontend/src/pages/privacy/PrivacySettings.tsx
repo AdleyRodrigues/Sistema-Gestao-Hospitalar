@@ -16,6 +16,8 @@ import {
     Typography
 } from '@mui/material';
 import { useState } from 'react';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useNavigate } from 'react-router-dom';
 import DataDeletionRequest from '../../components/privacy/DataDeletionRequest';
 
@@ -47,6 +49,9 @@ function TabPanel(props: TabPanelProps) {
 
 const PrivacySettings = () => {
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isExtraSmall = useMediaQuery('(max-width:400px)');
+    const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
     const [tabValue, setTabValue] = useState(0);
     const [consentSettings, setConsentSettings] = useState({
         marketing: false,
@@ -80,40 +85,76 @@ const PrivacySettings = () => {
     };
 
     return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Paper elevation={2} sx={{ p: 4, borderRadius: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Container maxWidth="lg" sx={{ py: isSmall ? 2 : 4 }}>
+            <Paper elevation={2} sx={{ p: isExtraSmall ? 2 : isSmall ? 3 : 4, borderRadius: 2 }}>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: isSmall ? 'column' : 'row',
+                    alignItems: isSmall ? 'flex-start' : 'center',
+                    gap: isSmall ? 1 : 0,
+                    mb: isSmall ? 2 : 3
+                }}>
                     <Button
                         startIcon={<ArrowBack />}
                         onClick={handleBack}
-                        sx={{ mr: 2 }}
+                        sx={{ mr: isSmall ? 0 : 2 }}
+                        size={isExtraSmall ? "small" : "medium"}
                     >
                         Voltar
                     </Button>
-                    <Typography variant="h4" component="h1">
+                    <Typography
+                        variant={isExtraSmall ? "h5" : isSmall ? "h5" : "h4"}
+                        component="h1"
+                    >
                         Configurações de Privacidade
                     </Typography>
                 </Box>
                 <Divider sx={{ mb: 3 }} />
 
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <Tabs value={tabValue} onChange={handleTabChange} aria-label="configurações de privacidade">
-                        <Tab label="Gerenciamento de Consentimento" id="privacy-tab-0" aria-controls="privacy-tabpanel-0" />
-                        <Tab label="Exclusão de Dados" id="privacy-tab-1" aria-controls="privacy-tabpanel-1" />
-                        <Tab label="Histórico de Solicitações" id="privacy-tab-2" aria-controls="privacy-tabpanel-2" />
+                    <Tabs
+                        value={tabValue}
+                        onChange={handleTabChange}
+                        aria-label="configurações de privacidade"
+                        variant={isSmall ? "scrollable" : "standard"}
+                        scrollButtons={isSmall ? "auto" : undefined}
+                        allowScrollButtonsMobile
+                    >
+                        <Tab
+                            label={isExtraSmall ? "Consentimento" : "Gerenciamento de Consentimento"}
+                            id="privacy-tab-0"
+                            aria-controls="privacy-tabpanel-0"
+                        />
+                        <Tab
+                            label={isExtraSmall ? "Exclusão" : "Exclusão de Dados"}
+                            id="privacy-tab-1"
+                            aria-controls="privacy-tabpanel-1"
+                        />
+                        <Tab
+                            label={isExtraSmall ? "Histórico" : "Histórico de Solicitações"}
+                            id="privacy-tab-2"
+                            aria-controls="privacy-tabpanel-2"
+                        />
                     </Tabs>
                 </Box>
 
                 <TabPanel value={tabValue} index={0}>
-                    <Typography variant="h6" gutterBottom>
+                    <Typography
+                        variant={isExtraSmall ? "subtitle1" : "h6"}
+                        gutterBottom
+                    >
                         Preferências de Consentimento
                     </Typography>
-                    <Typography variant="body2" paragraph>
+                    <Typography
+                        variant="body2"
+                        paragraph
+                        sx={{ mb: isSmall ? 2 : 3 }}
+                    >
                         Gerencie como seus dados podem ser utilizados pelo sistema. Você pode alterar estas configurações a qualquer momento.
                     </Typography>
 
-                    <Card variant="outlined" sx={{ mb: 3 }}>
-                        <CardContent>
+                    <Card variant="outlined" sx={{ mb: isSmall ? 2 : 3 }}>
+                        <CardContent sx={{ p: isExtraSmall ? 2 : 3 }}>
                             <FormControlLabel
                                 control={
                                     <Switch
@@ -129,8 +170,8 @@ const PrivacySettings = () => {
                         </CardContent>
                     </Card>
 
-                    <Card variant="outlined" sx={{ mb: 3 }}>
-                        <CardContent>
+                    <Card variant="outlined" sx={{ mb: isSmall ? 2 : 3 }}>
+                        <CardContent sx={{ p: isExtraSmall ? 2 : 3 }}>
                             <FormControlLabel
                                 control={
                                     <Switch
@@ -146,8 +187,8 @@ const PrivacySettings = () => {
                         </CardContent>
                     </Card>
 
-                    <Card variant="outlined" sx={{ mb: 3 }}>
-                        <CardContent>
+                    <Card variant="outlined" sx={{ mb: isSmall ? 2 : 3 }}>
+                        <CardContent sx={{ p: isExtraSmall ? 2 : 3 }}>
                             <FormControlLabel
                                 control={
                                     <Switch
@@ -163,8 +204,8 @@ const PrivacySettings = () => {
                         </CardContent>
                     </Card>
 
-                    <Card variant="outlined" sx={{ mb: 4 }}>
-                        <CardContent>
+                    <Card variant="outlined" sx={{ mb: isSmall ? 3 : 4 }}>
+                        <CardContent sx={{ p: isExtraSmall ? 2 : 3 }}>
                             <FormControlLabel
                                 control={
                                     <Switch
@@ -196,10 +237,17 @@ const PrivacySettings = () => {
                 </TabPanel>
 
                 <TabPanel value={tabValue} index={2}>
-                    <Typography variant="h6" gutterBottom>
+                    <Typography
+                        variant={isExtraSmall ? "subtitle1" : "h6"}
+                        gutterBottom
+                    >
                         Histórico de Solicitações
                     </Typography>
-                    <Typography variant="body1" paragraph>
+                    <Typography
+                        variant="body1"
+                        paragraph
+                        sx={{ mb: isSmall ? 2 : 3 }}
+                    >
                         Aqui você encontra o histórico de todas as suas solicitações relacionadas a dados pessoais.
                     </Typography>
 

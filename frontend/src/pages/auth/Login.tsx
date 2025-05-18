@@ -16,6 +16,8 @@ import {
     Fade,
     CircularProgress,
     Link,
+    useMediaQuery,
+    useTheme,
 } from '@mui/material';
 import { Visibility, VisibilityOff, MedicalServices } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
@@ -37,6 +39,8 @@ type LoginFormData = z.infer<typeof loginSchema>;
 const Login = () => {
     const { login, loading } = useAuth();
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [showPassword, setShowPassword] = useState(false);
     const [loginError, setLoginError] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
@@ -123,22 +127,27 @@ const Login = () => {
             justifyContent: 'center',
             backgroundColor: 'background.default',
             backgroundImage: 'linear-gradient(135deg, #f5f7fa 0%, #e4efe9 100%)',
+            px: { xs: 2, sm: 3 },
+            py: { xs: 2, sm: 0 },
         }}>
             <Fade in={mounted} timeout={800}>
                 <Paper
                     elevation={6}
                     sx={{
-                        borderRadius: '16px',
+                        borderRadius: { xs: '12px', sm: '16px' },
                         overflow: 'hidden',
                         width: '100%',
-                        maxWidth: '450px',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                        maxWidth: { xs: '100%', sm: '450px' },
+                        boxShadow: {
+                            xs: '0 4px 12px rgba(0,0,0,0.1)',
+                            sm: '0 10px 25px rgba(0,0,0,0.1)'
+                        },
                     }}
                 >
                     <Box sx={{
                         bgcolor: 'primary.main',
                         color: 'white',
-                        p: 3,
+                        p: { xs: 2, sm: 3 },
                         textAlign: 'center',
                         backgroundImage: 'linear-gradient(135deg, #1976D2 0%, #2196F3 100%)',
                     }}>
@@ -147,35 +156,43 @@ const Login = () => {
                                 m: '0 auto',
                                 bgcolor: 'white',
                                 color: 'primary.main',
-                                width: 60,
-                                height: 60,
+                                width: { xs: 50, sm: 60 },
+                                height: { xs: 50, sm: 60 },
                                 boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
                             }}
                         >
-                            <MedicalServices fontSize="large" />
+                            <MedicalServices fontSize={isMobile ? "medium" : "large"} />
                         </Avatar>
-                        <Typography component="h1" variant="h4" sx={{ mt: 2, fontWeight: 700 }}>
+                        <Typography
+                            component="h1"
+                            variant={isMobile ? "h5" : "h4"}
+                            sx={{
+                                mt: 2,
+                                fontWeight: 700
+                            }}
+                        >
                             VidaPlus
                         </Typography>
-                        <Typography variant="subtitle1" sx={{ mt: 1, opacity: 0.9 }}>
+                        <Typography variant="subtitle1" sx={{ mt: 1, opacity: 0.9, fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                             Sistema de Gestão Hospitalar
                         </Typography>
                     </Box>
 
-                    <Box sx={{ p: 4 }}>
+                    <Box sx={{ p: { xs: 3, sm: 4 } }}>
                         {loginError && (
                             <Fade in={!!loginError}>
                                 <Alert
                                     severity="error"
                                     sx={{
-                                        mb: 3,
+                                        mb: { xs: 2, sm: 3 },
                                         borderRadius: '8px',
                                         animation: 'pulse 1.5s infinite',
                                         '@keyframes pulse': {
                                             '0%': { boxShadow: '0 0 0 0 rgba(220, 38, 38, 0.4)' },
                                             '70%': { boxShadow: '0 0 0 6px rgba(220, 38, 38, 0)' },
                                             '100%': { boxShadow: '0 0 0 0 rgba(220, 38, 38, 0)' },
-                                        }
+                                        },
+                                        fontSize: { xs: '0.875rem', sm: '1rem' },
                                     }}
                                 >
                                     {loginError}
@@ -200,9 +217,12 @@ const Login = () => {
                                 InputProps={{
                                     sx: { borderRadius: 2 }
                                 }}
+                                sx={{
+                                    mb: { xs: 1.5, sm: 2 },
+                                }}
                                 {...register('email')}
                             />
-                            <FormControl variant="outlined" fullWidth margin="normal">
+                            <FormControl variant="outlined" fullWidth margin="normal" sx={{ mb: { xs: 1.5, sm: 2 } }}>
                                 <InputLabel htmlFor="password" error={!!errors.password}>
                                     Senha
                                 </InputLabel>
@@ -216,6 +236,7 @@ const Login = () => {
                                                 aria-label="toggle password visibility"
                                                 onClick={handleTogglePasswordVisibility}
                                                 edge="end"
+                                                size={isMobile ? "small" : "medium"}
                                             >
                                                 {showPassword ? <VisibilityOff /> : <Visibility />}
                                             </IconButton>
@@ -237,9 +258,9 @@ const Login = () => {
                                 fullWidth
                                 variant="contained"
                                 sx={{
-                                    mt: 3,
-                                    mb: 2,
-                                    py: 1.5,
+                                    mt: { xs: 2, sm: 3 },
+                                    mb: { xs: 1.5, sm: 2 },
+                                    py: { xs: 1.25, sm: 1.5 },
                                     borderRadius: 2,
                                     fontWeight: 600,
                                     position: 'relative',
@@ -252,7 +273,8 @@ const Login = () => {
                                     },
                                     '&:active': {
                                         transform: 'translateY(0)',
-                                    }
+                                    },
+                                    fontSize: { xs: '0.9rem', sm: '1rem' },
                                 }}
                                 disabled={loading}
                             >
@@ -276,33 +298,38 @@ const Login = () => {
                                     component="button"
                                     variant="body2"
                                     onClick={handlePrivacyPolicyClick}
-                                    sx={{ textDecoration: 'none' }}
+                                    sx={{
+                                        textDecoration: 'none',
+                                        fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                                    }}
                                 >
                                     Política de Privacidade
                                 </Link>
                             </Box>
 
-                            <Box sx={{
-                                mt: 3,
-                                p: 2,
-                                border: '1px dashed',
-                                borderColor: 'divider',
-                                borderRadius: 2,
-                                bgcolor: 'rgba(0,0,0,0.02)'
-                            }}>
-                                <Typography variant="body2" align="center" color="text.secondary" sx={{ fontWeight: 500 }}>
-                                    Dicas de login para teste:
-                                </Typography>
-                                <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
-                                    • Email com "admin" = perfil administrador
-                                </Typography>
-                                <Typography variant="caption" display="block" color="text.secondary">
-                                    • Email com "doctor" ou "professional" = perfil profissional
-                                </Typography>
-                                <Typography variant="caption" display="block" color="text.secondary">
-                                    • Qualquer outro email = perfil paciente
-                                </Typography>
-                            </Box>
+                            {!isMobile && (
+                                <Box sx={{
+                                    mt: 3,
+                                    p: 2,
+                                    border: '1px dashed',
+                                    borderColor: 'divider',
+                                    borderRadius: 2,
+                                    bgcolor: 'rgba(0,0,0,0.02)'
+                                }}>
+                                    <Typography variant="body2" align="center" color="text.secondary" sx={{ fontWeight: 500 }}>
+                                        Dicas de login para teste:
+                                    </Typography>
+                                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
+                                        • Email com "admin" = perfil administrador
+                                    </Typography>
+                                    <Typography variant="caption" display="block" color="text.secondary">
+                                        • Email com "doctor" ou "professional" = perfil profissional
+                                    </Typography>
+                                    <Typography variant="caption" display="block" color="text.secondary">
+                                        • Qualquer outro email = perfil paciente
+                                    </Typography>
+                                </Box>
+                            )}
                         </Box>
                     </Box>
                 </Paper>
