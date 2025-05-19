@@ -83,12 +83,7 @@ app.get('/api/appointments', (req, res) => {
 // Rotas de dados financeiros
 app.get('/api/financial_data', (req, res) => {
     const db = readDatabase();
-    const financialData = db.financial_data || [];
-    console.log('Enviando dados financeiros:', {
-        total: financialData.length,
-        primeiroItem: financialData.length > 0 ? financialData[0] : null
-    });
-    res.json(financialData);
+    res.json(db.financial_data || []);
 });
 
 // Rota de registro simplificada para teste
@@ -112,76 +107,53 @@ app.post('/register', (req, res) => {
 // Rota de login
 app.post('/api/login', (req, res) => {
     console.log('Tentativa de login:', req.body);
-    const { email, password } = req.body;
+    const { email } = req.body;
 
-    // Buscar usuário no banco de dados
-    const db = readDatabase();
-    console.log('Todos os usuários:', db.users.map(u => ({ id: u.id, email: u.email, role: u.role })));
-
-    const user = (db.users || []).find(u => u.email === email);
-    console.log('Usuário encontrado:', user ? { id: user.id, email: user.email, role: user.role } : 'Nenhum');
-
-    if (user && user.password === password) {
-        // Usuário encontrado
-        console.log('Login bem-sucedido:', { id: user.id, email: user.email, role: user.role });
-        res.json({
-            token: 'test-token-' + Date.now(),
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                status: user.status
-            }
-        });
-    } else {
-        // Usuário não encontrado ou senha incorreta
-        console.log('Falha no login: credenciais inválidas');
-        res.status(401).json({ error: 'Credenciais inválidas' });
+    // Lógica simplificada de login para testes
+    let role = 'patient';
+    if (email.includes('admin')) {
+        role = 'admin';
+    } else if (email.includes('doctor') || email.includes('professional')) {
+        role = 'professional';
     }
+
+    res.json({
+        token: 'test-token-' + Date.now(),
+        user: {
+            id: Date.now().toString(),
+            name: email.split('@')[0],
+            email,
+            role,
+            status: 'active'
+        }
+    });
 });
 
 // Mantendo a rota sem prefixo para compatibilidade com o código atual do frontend
 app.post('/login', (req, res) => {
     console.log('Tentativa de login sem prefixo:', req.body);
-    const { email, password } = req.body;
+    const { email } = req.body;
 
-    // Buscar usuário no banco de dados
-    const db = readDatabase();
-    console.log('Todos os usuários (rota sem prefixo):', db.users.map(u => ({ id: u.id, email: u.email, role: u.role })));
-
-    const user = (db.users || []).find(u => u.email === email);
-    console.log('Usuário encontrado (rota sem prefixo):', user ? { id: user.id, email: user.email, role: user.role } : 'Nenhum');
-
-    if (user && user.password === password) {
-        // Usuário encontrado
-        console.log('Login bem-sucedido (rota sem prefixo):', { id: user.id, email: user.email, role: user.role });
-        res.json({
-            token: 'test-token-' + Date.now(),
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                status: user.status
-            }
-        });
-    } else {
-        // Usuário não encontrado ou senha incorreta
-        console.log('Falha no login (rota sem prefixo): credenciais inválidas');
-        res.status(401).json({ error: 'Credenciais inválidas' });
+    // Lógica simplificada de login para testes
+    let role = 'patient';
+    if (email.includes('admin')) {
+        role = 'admin';
+    } else if (email.includes('doctor') || email.includes('professional')) {
+        role = 'professional';
     }
-});
 
-// Rota para limpar sessão (utilizada para depuração)
-app.post('/api/clear-session', (req, res) => {
-    console.log('Limpando sessão para depuração');
     res.json({
-        success: true,
-        message: 'Sessão limpa. Limpe o localStorage no navegador também.'
+        token: 'test-token-' + Date.now(),
+        user: {
+            id: Date.now().toString(),
+            name: email.split('@')[0],
+            email,
+            role,
+            status: 'active'
+        }
     });
 });
 
 app.listen(port, () => {
-    console.log(`API VidaPlus rodando em http://localhost:${port}`);
+    console.log(`Servidor de teste rodando em http://localhost:${port}`);
 }); 

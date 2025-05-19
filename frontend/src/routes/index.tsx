@@ -1,11 +1,25 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, useRoutes } from 'react-router-dom';
+import { Navigate, useRoutes, useParams } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
 import { useAuth } from '../hooks/useAuth';
+
+// Componente para a rota de teste de perfil
+const TestProfileRouter = () => {
+    const { role } = useParams<{ role: string }>();
+
+    if (role === 'admin') {
+        return <AdminProfile />;
+    } else if (role === 'professional') {
+        return <ProfessionalProfile />;
+    } else {
+        return <PatientProfile />;
+    }
+};
 
 // Prefetch para as rotas principais
 // Isso inicia o carregamento assim que o JavaScript é executado
 const Login = lazy(() => import('../pages/auth/Login'));
+const Register = lazy(() => import('../pages/auth/Register'));
 const PatientDashboard = lazy(() => {
     const module = import('../pages/dashboard/patient/PatientDashboard');
     return module;
@@ -46,11 +60,20 @@ const UserManagement = lazy(() => import('../pages/admin/UserManagement'));
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
     const { isAuthenticated, user } = useAuth();
 
+    console.log('ProtectedRoute - Verificando permissões:', {
+        isAuthenticated,
+        user,
+        allowedRoles,
+        hasPermission: user ? allowedRoles.includes(user.role) : false
+    });
+
     if (!isAuthenticated) {
+        console.log('ProtectedRoute - Usuário não autenticado, redirecionando para login');
         return <Navigate to="/login" />;
     }
 
     if (user && !allowedRoles.includes(user.role)) {
+        console.log(`ProtectedRoute - Usuário não tem permissão (${user.role}), redirecionando para dashboard adequado`);
         // Redirecionar para dashboard apropriado se não tiver permissão
         if (user.role === 'admin') {
             return <Navigate to="/admin/dashboard" />;
@@ -61,6 +84,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
         }
     }
 
+    console.log('ProtectedRoute - Usuário com permissão, renderizando componente');
     return <MainLayout>{children}</MainLayout>;
 };
 
@@ -73,6 +97,14 @@ export default function Router() {
             element: (
                 <Suspense fallback={null}>
                     <Login />
+                </Suspense>
+            ),
+        },
+        {
+            path: 'register',
+            element: (
+                <Suspense fallback={null}>
+                    <Register />
                 </Suspense>
             ),
         },
@@ -287,17 +319,7 @@ export default function Router() {
             path: 'test-profile/:role',
             element: (
                 <Suspense fallback={null}>
-                    {/* Aqui verificamos o parâmetro e carregamos o perfil adequado */}
-                    {({ params }) => {
-                        const role = params.role;
-                        if (role === 'admin') {
-                            return <AdminProfile />;
-                        } else if (role === 'professional') {
-                            return <ProfessionalProfile />;
-                        } else {
-                            return <PatientProfile />;
-                        }
-                    }}
+                    <TestProfileRouter />
                 </Suspense>
             ),
         },

@@ -143,6 +143,26 @@ const AdminDashboard = () => {
             const appointments = appointmentsResponse.data || [];
             const financialData = financialResponse.data || [];
 
+            // Log para depuração dos dados financeiros
+            console.log('Dados financeiros recebidos:', {
+                total: financialData.length,
+                primeiroItem: financialData.length > 0 ? financialData[0] : null,
+                temDados: financialData.length > 0
+            });
+
+            // Verificar o ano dos dados
+            if (financialData.length > 0) {
+                // Verificar ano das primeiras 3 entradas
+                const amostra = financialData.slice(0, 3);
+                console.log('Amostra de datas para verificação de ano:',
+                    amostra.map((item: any) => ({
+                        id: item.id,
+                        date: item.date,
+                        ano: new Date(item.date).getFullYear()
+                    }))
+                );
+            }
+
             // Calcular estatísticas baseadas nos dados reais
             const now = new Date();
             const oneMonthAgo = new Date();
@@ -220,18 +240,102 @@ const AdminDashboard = () => {
 
         // Função para filtrar por data
         const filterByDate = (data: any[], startDate: Date, endDate: Date) => {
+            console.log('Filtrando dados:', {
+                totalDados: data.length,
+                periodo: period,
+                dataInicial: startDate.toISOString(),
+                dataFinal: endDate.toISOString()
+            });
+
+            // Se não houver dados, retornar array vazio
+            if (!data || data.length === 0) {
+                console.log('Não há dados para filtrar');
+                return [];
+            }
+
+            // Verificar formato de data dos itens
+            if (data.length > 0) {
+                const primeiroItem = data[0];
+                console.log('Formato de data do primeiro item:', {
+                    id: primeiroItem.id,
+                    date: primeiroItem.date,
+                    tipo: typeof primeiroItem.date
+                });
+            }
+
             return data.filter((item: any) => {
-                const itemDate = new Date(item.date);
-                return itemDate >= startDate && itemDate <= endDate;
+                // Garantir que o item tem propriedade date
+                if (!item.date) {
+                    console.log('Item sem data:', item);
+                    return false;
+                }
+
+                try {
+                    // Converter a data do item para um objeto Date
+                    // Se a data for uma string no formato "YYYY-MM-DD", precisamos tratar corretamente
+                    let itemDate: Date;
+                    if (typeof item.date === 'string') {
+                        // Converter string para Date, assumindo formato ISO ou YYYY-MM-DD
+                        itemDate = new Date(item.date);
+
+                        // Se não inclui hora e é apenas YYYY-MM-DD, define para meio-dia para evitar erros de fuso
+                        if (item.date.length === 10 && item.date.includes('-')) {
+                            itemDate.setHours(12, 0, 0, 0);
+                        }
+                    } else {
+                        itemDate = item.date;
+                    }
+
+                    // Verificar se a data é válida
+                    if (isNaN(itemDate.getTime())) {
+                        console.log('Data inválida:', {
+                            id: item.id,
+                            date: item.date
+                        });
+                        return false;
+                    }
+
+                    // Comparar datas usando getTime() para maior precisão
+                    const inRange =
+                        itemDate.getTime() >= startDate.getTime() &&
+                        itemDate.getTime() <= endDate.getTime();
+
+                    // Para depuração
+                    console.log('Filtrando item:', {
+                        id: item.id,
+                        original: item.date,
+                        parsed: itemDate.toISOString(),
+                        start: startDate.toISOString(),
+                        end: endDate.toISOString(),
+                        isInRange: inRange
+                    });
+
+                    return inRange;
+                } catch (error) {
+                    console.error('Erro ao processar data:', error, item);
+                    return false;
+                }
             });
         };
 
         if (period === 'week') {
             // Dados para a semana
             for (let i = 6; i >= 0; i--) {
-                const date = subDays(new Date(), i);
-                const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-                const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+                // Criar data base de 2024 (mesmo ano dos dados) em vez de usar new Date()
+                const today = new Date();
+                const date = new Date(2024, today.getMonth(), today.getDate());
+                date.setDate(date.getDate() - i);
+
+                const startOfDay = new Date(date);
+                startOfDay.setHours(0, 0, 0, 0);
+
+                const endOfDay = new Date(date);
+                endOfDay.setHours(23, 59, 59, 999);
+
+                console.log(`Filtrando semana - dia ${i}:`, {
+                    startOfDay: startOfDay.toISOString(),
+                    endOfDay: endOfDay.toISOString()
+                });
 
                 const dayIncome = filterByDate(
                     financialData.filter((item: any) => item.type === 'income'),
@@ -254,20 +358,43 @@ const AdminDashboard = () => {
         } else if (period === 'month') {
             // Dados para o mês (agrupados a cada 3 dias)
             for (let i = 0; i < 30; i += 3) {
-                const endDate = subDays(new Date(), i);
-                const startDate = subDays(endDate, 2);
+                // Criar data base de 2024 (mesmo ano dos dados) em vez de usar new Date()
+                const today = new Date();
+                const baseDate = new Date(2024, today.getMonth(), today.getDate());
+                const endDate = new Date(baseDate);
+                endDate.setDate(endDate.getDate() - i);
 
-                const periodIncome = filterByDate(
+                const startDate = new Date(endDate);
+                startDate.setDate(startDate.getDate() - 2);
+
+                // Log de datas para depuração
+                console.log(`Período ${i / 3 + 1}:`, {
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString()
+                });
+
+                const filteredIncome = filterByDate(
                     financialData.filter((item: any) => item.type === 'income'),
                     startDate,
                     endDate
-                ).reduce((sum: number, item: any) => sum + item.amount, 0);
+                );
 
-                const periodExpenses = filterByDate(
+                const filteredExpenses = filterByDate(
                     financialData.filter((item: any) => item.type === 'expense'),
                     startDate,
                     endDate
-                ).reduce((sum: number, item: any) => sum + item.amount, 0);
+                );
+
+                // Log dos resultados filtrados
+                console.log(`Resultado da filtragem para período ${i / 3 + 1}:`, {
+                    totalIncome: filteredIncome.length,
+                    totalExpenses: filteredExpenses.length,
+                    valorReceita: filteredIncome.reduce((sum: number, item: any) => sum + item.amount, 0),
+                    valorDespesas: filteredExpenses.reduce((sum: number, item: any) => sum + item.amount, 0)
+                });
+
+                const periodIncome = filteredIncome.reduce((sum: number, item: any) => sum + item.amount, 0);
+                const periodExpenses = filteredExpenses.reduce((sum: number, item: any) => sum + item.amount, 0);
 
                 revenueByPeriod.push({
                     name: format(endDate, 'dd/MM'),
@@ -282,11 +409,18 @@ const AdminDashboard = () => {
                 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
             ];
 
-            const currentYear = new Date().getFullYear();
+            // Usar ano fixo 2024 para todos os dados
+            const currentYear = 2024;
 
             for (let i = 0; i < 12; i++) {
                 const startDate = new Date(currentYear, i, 1);
                 const endDate = new Date(currentYear, i + 1, 0);
+
+                // Log para depuração do ano
+                console.log(`Mês ${months[i]}:`, {
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString()
+                });
 
                 const monthIncome = filterByDate(
                     financialData.filter((item: any) => item.type === 'income'),
@@ -309,15 +443,23 @@ const AdminDashboard = () => {
         }
 
         setRevenueData(revenueByPeriod);
+        console.log('Dados finais para o gráfico de Receitas e Despesas:', revenueByPeriod);
 
         // Calcular taxa de ocupação baseado nas consultas agendadas vs capacidade total
         const occupancyData: OccupancyData[] = [];
 
         if (period === 'week') {
             for (let i = 6; i >= 0; i--) {
-                const date = subDays(new Date(), i);
-                const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-                const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+                // Criar data base de 2024 (mesmo ano dos dados) em vez de usar new Date()
+                const today = new Date();
+                const date = new Date(2024, today.getMonth(), today.getDate());
+                date.setDate(date.getDate() - i);
+
+                const startOfDay = new Date(date);
+                startOfDay.setHours(0, 0, 0, 0);
+
+                const endOfDay = new Date(date);
+                endOfDay.setHours(23, 59, 59, 999);
 
                 // Contar consultas no dia
                 const dayAppointments = filterByDate(appointments, startOfDay, endOfDay).length;
@@ -336,8 +478,14 @@ const AdminDashboard = () => {
             }
         } else if (period === 'month') {
             for (let i = 0; i < 30; i += 3) {
-                const endDate = subDays(new Date(), i);
-                const startDate = subDays(endDate, 2);
+                // Criar data base de 2024 (mesmo ano dos dados) em vez de usar new Date()
+                const today = new Date();
+                const baseDate = new Date(2024, today.getMonth(), today.getDate());
+                const endDate = new Date(baseDate);
+                endDate.setDate(endDate.getDate() - i);
+
+                const startDate = new Date(endDate);
+                startDate.setDate(startDate.getDate() - 2);
 
                 const periodAppointments = filterByDate(appointments, startDate, endDate).length;
                 const capacity = 16 * 3 * stats.totalProfessionals; // 3 dias
@@ -354,7 +502,8 @@ const AdminDashboard = () => {
                 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
             ];
 
-            const currentYear = new Date().getFullYear();
+            // Usar ano fixo 2024 para todos os dados
+            const currentYear = 2024;
 
             for (let i = 0; i < 12; i++) {
                 const startDate = new Date(currentYear, i, 1);
@@ -373,6 +522,7 @@ const AdminDashboard = () => {
         }
 
         setOccupancyRate(occupancyData);
+        console.log('Dados finais para o gráfico de Taxa de Ocupação:', occupancyData);
     };
 
     const generateRealRecentAppointments = (appointments: any[], patients: any[], professionals: any[]) => {

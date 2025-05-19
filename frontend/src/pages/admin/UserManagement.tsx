@@ -1,8 +1,19 @@
-import { useState, useEffect } from 'react';
+import {
+    Close,
+    Delete,
+    Edit,
+    FilterAlt,
+    HealthAndSafety,
+    MedicalServices,
+    Person,
+    PersonAdd,
+    PersonOff,
+    Search,
+    Visibility
+} from '@mui/icons-material';
 import {
     Box,
     Button,
-    Card,
     Chip,
     Container,
     Dialog,
@@ -10,7 +21,6 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
-    Divider,
     FormControl,
     Grid,
     IconButton,
@@ -34,23 +44,11 @@ import {
     useMediaQuery,
     useTheme
 } from '@mui/material';
-import {
-    Add,
-    Close,
-    Delete,
-    Edit,
-    FilterAlt,
-    HealthAndSafety,
-    MedicalServices,
-    Person,
-    PersonAdd,
-    PersonOff,
-    Search,
-    Visibility
-} from '@mui/icons-material';
-import { api } from '../../services/api';
-import { useAuth } from '../../hooks/useAuth';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { api } from '../../services/api';
+import { SelectChangeEvent } from '@mui/material/Select';
 
 // Interfaces para os usuários
 interface User {
@@ -79,15 +77,15 @@ interface User {
 const UserManagement = () => {
     const theme = useTheme();
     const navigate = useNavigate();
-    const { user: currentUser } = useAuth();
+    useAuth();
     const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
     const isExtraSmall = useMediaQuery('(max-width:400px)');
 
     // Estados para gerenciar os usuários e filtros
     const [users, setUsers] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [, setLoading] = useState(true);
+    const [, setError] = useState<string | null>(null);
 
     // Estado para formulário de usuário
     const [userForm, setUserForm] = useState<Partial<User>>({
@@ -245,14 +243,20 @@ const UserManagement = () => {
         setDeleteConfirmOpen(true);
     };
 
-    const handleFormInputChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const handleSelectChange = (event: SelectChangeEvent<string>) => {
+        const { name, value } = event.target;
+        setUserForm(prev => ({
+            ...prev,
+            [name as string]: value
+        }));
+    };
+
+    const handleFormInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        if (name) {
-            setUserForm(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        }
+        setUserForm(prev => ({
+            ...prev,
+            [name as string]: value
+        }));
     };
 
     const handleSubmitUser = async () => {
@@ -444,7 +448,7 @@ const UserManagement = () => {
                                 id="user-role"
                                 name="role"
                                 value={userForm.role || 'patient'}
-                                onChange={handleFormInputChange}
+                                onChange={handleSelectChange}
                                 label="Perfil"
                             >
                                 <MenuItem value="patient">Paciente</MenuItem>
@@ -461,7 +465,7 @@ const UserManagement = () => {
                                 id="user-status"
                                 name="status"
                                 value={userForm.status || 'active'}
-                                onChange={handleFormInputChange}
+                                onChange={handleSelectChange}
                                 label="Status"
                             >
                                 <MenuItem value="active">Ativo</MenuItem>
@@ -516,7 +520,7 @@ const UserManagement = () => {
                                         id="user-gender"
                                         name="gender"
                                         value={userForm.gender || ''}
-                                        onChange={handleFormInputChange}
+                                        onChange={handleSelectChange}
                                         label="Gênero"
                                     >
                                         <MenuItem value="male">Masculino</MenuItem>
@@ -533,7 +537,7 @@ const UserManagement = () => {
                                         id="user-blood"
                                         name="bloodType"
                                         value={userForm.bloodType || ''}
-                                        onChange={handleFormInputChange}
+                                        onChange={handleSelectChange}
                                         label="Tipo Sanguíneo"
                                     >
                                         <MenuItem value="A+">A+</MenuItem>

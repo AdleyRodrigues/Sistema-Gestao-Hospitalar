@@ -1,8 +1,20 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, User } from '../../types/auth';
 
+// Tente obter o usuário do localStorage
+const getUserFromLocalStorage = (): User | null => {
+    const userString = localStorage.getItem('@vidaplus:user');
+    if (!userString) return null;
+    try {
+        return JSON.parse(userString);
+    } catch (error) {
+        localStorage.removeItem('@vidaplus:user');
+        return null;
+    }
+};
+
 const initialState: AuthState = {
-    user: null,
+    user: getUserFromLocalStorage(),
     token: localStorage.getItem('@vidaplus:token'),
     isAuthenticated: !!localStorage.getItem('@vidaplus:token'),
     loading: false,

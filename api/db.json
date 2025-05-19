@@ -28,6 +28,84 @@
       "role": "professional",
       "status": "active",
       "createdAt": "2023-10-20T11:30:00.000Z"
+    },
+    {
+      "id": "user6",
+      "name": "João Oliveira",
+      "email": "joao@example.com",
+      "password": "12345678",
+      "phone": "(11) 94567-8901",
+      "role": "patient",
+      "status": "active",
+      "createdAt": "2023-12-15T10:20:00.000Z"
+    },
+    {
+      "id": "user7",
+      "name": "Dra. Juliana Costa",
+      "email": "juliana@example.com",
+      "password": "12345678",
+      "phone": "(11) 93456-7890",
+      "role": "professional",
+      "status": "active",
+      "createdAt": "2023-11-15T08:30:00.000Z"
+    },
+    {
+      "id": "user8",
+      "name": "Mariana Silva",
+      "email": "mariana@example.com",
+      "password": "12345678",
+      "phone": "(11) 92345-6789",
+      "role": "patient",
+      "status": "active",
+      "createdAt": "2024-01-05T09:45:00.000Z"
+    },
+    {
+      "id": "user9",
+      "name": "Dr. Fernando Alves",
+      "email": "fernando@example.com",
+      "password": "12345678",
+      "phone": "(11) 91234-5678",
+      "role": "professional",
+      "status": "active",
+      "createdAt": "2024-01-10T14:10:00.000Z"
+    },
+    {
+      "id": "user10",
+      "name": "Ana Beatriz",
+      "email": "ana@example.com",
+      "password": "12345678",
+      "phone": "(11) 99876-5432",
+      "role": "patient",
+      "status": "active",
+      "createdAt": "2024-02-15T11:25:00.000Z"
+    },
+    {
+      "id": "user11",
+      "name": "Dra. Carla Mendes",
+      "email": "carla@example.com",
+      "password": "12345678",
+      "phone": "(11) 98765-4312",
+      "role": "professional",
+      "status": "active",
+      "createdAt": "2024-02-20T16:30:00.000Z"
+    },
+    {
+      "id": "1747621465557",
+      "name": "Adley Rodrigues de Castro",
+      "email": "adleyrodrigues2015@gmail.com",
+      "password": "123456",
+      "role": "patient",
+      "status": "active",
+      "createdAt": "2024-05-19T02:24:25.557Z"
+    },
+    {
+      "id": "1747621873877",
+      "name": "teste teste",
+      "email": "teste@gmail.com",
+      "password": "123456",
+      "role": "patient",
+      "status": "active",
+      "createdAt": "2024-05-19T02:31:13.877Z"
     }
   ],
   "patients": [
@@ -72,6 +150,60 @@
         "state": "SP",
         "zipCode": "01305-000"
       }
+    },
+    {
+      "id": "user8",
+      "name": "Mariana Silva",
+      "email": "mariana@example.com",
+      "password": "12345678",
+      "phone": "(11) 92345-6789",
+      "role": "patient",
+      "status": "active",
+      "createdAt": "2024-01-05T09:45:00.000Z",
+      "birthDate": "1990-07-22",
+      "gender": "female",
+      "bloodType": "A+",
+      "address": {
+        "street": "Avenida Paulista",
+        "number": "1578",
+        "neighborhood": "Bela Vista",
+        "city": "São Paulo",
+        "state": "SP",
+        "zipCode": "01310-200"
+      }
+    },
+    {
+      "id": "user10",
+      "name": "Ana Beatriz",
+      "email": "ana@example.com",
+      "password": "12345678",
+      "phone": "(11) 99876-5432",
+      "role": "patient",
+      "status": "active",
+      "createdAt": "2024-02-15T11:25:00.000Z",
+      "birthDate": "1995-12-10",
+      "gender": "female",
+      "bloodType": "AB+",
+      "address": {
+        "street": "Rua Oscar Freire",
+        "number": "456",
+        "neighborhood": "Jardins",
+        "city": "São Paulo",
+        "state": "SP",
+        "zipCode": "01426-001"
+      }
+    },
+    {
+      "id": "1747621465557",
+      "birthDate": "2001-05-07",
+      "gender": "masculino",
+      "bloodType": "nao_sei"
+    },
+    {
+      "id": "1747621873877",
+      "birthDate": "2001-05-07",
+      "gender": "masculino",
+      "bloodType": "nao_sei"
     }
   ],
   "professionals": [
@@ -113,34 +245,253 @@
       "startTime": "10:00",
       "endTime": "19:00",
       "appointmentDuration": 30
+    },
+    {
+      "id": "user9",
+      "name": "Dr. Fernando Alves",
+      "email": "fernando@example.com",
+      "password": "12345678",
+      "phone": "(11) 91234-5678",
+      "role": "professional",
+      "status": "active",
+      "createdAt": "2024-01-10T14:10:00.000Z",
+      "specialty": "Cardiologia",
+      "crm": "CRM/SP 38547",
+      "availableDays": [
+        1,
+        2,
+        4
+      ],
+      "startTime": "08:00",
+      "endTime": "16:00",
+      "appointmentDuration": 40
+    },
+    {
+      "id": "user11",
+      "name": "Dra. Carla Mendes",
+      "email": "carla@example.com",
+      "password": "12345678",
+      "phone": "(11) 98765-4312",
+      "role": "professional",
+      "status": "active",
+      "createdAt": "2024-02-20T16:30:00.000Z",
+      "specialty": "Pediatria",
+      "crm": "CRM/SP 42156",
+      "availableDays": [
+        3,
+        5
+      ],
+      "startTime": "09:30",
+      "endTime": "17:30",
+      "appointmentDuration": 30
     }
   ],
   "appointments": [
     {
-      "id": "app3",
+      "id": "app1",
       "patientId": "user2",
       "professionalId": "user5",
-      "date": "2025-03-15T15:45:00.000Z",
+      "date": "2024-05-15T15:45:00.000Z",
       "status": "completed",
       "type": "consultation",
       "notes": "Paciente relata dores nas costas."
     },
     {
-      "id": "app5",
+      "id": "app2",
       "patientId": "user6",
       "professionalId": "user7",
-      "date": "2025-04-25T11:00:00.000Z",
+      "date": "2024-05-18T11:00:00.000Z",
       "status": "scheduled",
       "type": "telemedicine",
       "notes": "Paciente relata manchas na pele."
+    },
+    {
+      "id": "app3",
+      "patientId": "user8",
+      "professionalId": "user9",
+      "date": "2024-05-10T09:30:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Paciente com pressão alta."
+    },
+    {
+      "id": "app4",
+      "patientId": "user10",
+      "professionalId": "user11",
+      "date": "2024-05-12T14:00:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Consulta pediátrica de rotina."
+    },
+    {
+      "id": "app5",
+      "patientId": "user2",
+      "professionalId": "user9",
+      "date": "2024-05-17T10:15:00.000Z",
+      "status": "completed",
+      "type": "return",
+      "notes": "Retorno para verificar resultados de exames."
+    },
+    {
+      "id": "app6",
+      "patientId": "user10",
+      "professionalId": "user5",
+      "date": "2024-05-16T16:30:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Paciente com dores no joelho."
+    },
+    {
+      "id": "app7",
+      "patientId": "user6",
+      "professionalId": "user7",
+      "date": "2024-05-19T13:45:00.000Z",
+      "status": "scheduled",
+      "type": "return",
+      "notes": "Retorno para avaliar resposta ao tratamento."
+    },
+    {
+      "id": "app8",
+      "patientId": "user8",
+      "professionalId": "user11",
+      "date": "2024-05-20T09:00:00.000Z",
+      "status": "scheduled",
+      "type": "consultation",
+      "notes": "Consulta de rotina."
+    },
+    {
+      "id": "app9",
+      "patientId": "user2",
+      "professionalId": "user5",
+      "date": "2024-05-03T11:30:00.000Z",
+      "status": "completed",
+      "type": "telemedicine",
+      "notes": "Teleconsulta para avaliação inicial."
+    },
+    {
+      "id": "app10",
+      "patientId": "user10",
+      "professionalId": "user9",
+      "date": "2024-05-04T15:00:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Avaliação cardiovascular completa."
+    },
+    {
+      "id": "app11",
+      "patientId": "user8",
+      "professionalId": "user7",
+      "date": "2024-04-29T10:30:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Avaliação de lesão na pele."
+    },
+    {
+      "id": "app12",
+      "patientId": "user6",
+      "professionalId": "user11",
+      "date": "2024-04-30T09:15:00.000Z",
+      "status": "completed",
+      "type": "telemedicine",
+      "notes": "Consulta de acompanhamento."
+    },
+    {
+      "id": "app1001",
+      "patientId": "user2",
+      "professionalId": "user5",
+      "date": "2024-01-10T09:00:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Consulta de rotina."
+    },
+    {
+      "id": "app1002",
+      "patientId": "user6",
+      "professionalId": "user7",
+      "date": "2024-01-15T14:00:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Avaliação dermatológica."
+    },
+    {
+      "id": "app1003",
+      "patientId": "user8",
+      "professionalId": "user9",
+      "date": "2024-01-20T11:30:00.000Z",
+      "status": "completed",
+      "type": "return",
+      "notes": "Retorno pós-exame."
+    },
+    {
+      "id": "app1004",
+      "patientId": "user10",
+      "professionalId": "user11",
+      "date": "2024-01-25T16:00:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Consulta pediátrica."
+    },
+    {
+      "id": "app1005",
+      "patientId": "user2",
+      "professionalId": "user5",
+      "date": "2024-02-05T10:00:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Dor lombar."
+    },
+    {
+      "id": "app1006",
+      "patientId": "user6",
+      "professionalId": "user7",
+      "date": "2024-02-12T15:00:00.000Z",
+      "status": "completed",
+      "type": "telemedicine",
+      "notes": "Consulta online."
+    },
+    {
+      "id": "app1007",
+      "patientId": "user8",
+      "professionalId": "user9",
+      "date": "2024-02-18T13:00:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Avaliação cardiológica."
+    },
+    {
+      "id": "app1008",
+      "patientId": "user10",
+      "professionalId": "user11",
+      "date": "2024-02-22T09:30:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Consulta de rotina."
+    },
+    {
+      "id": "app1009",
+      "patientId": "user2",
+      "professionalId": "user5",
+      "date": "2024-03-03T10:00:00.000Z",
+      "status": "completed",
+      "type": "consultation",
+      "notes": "Dor no joelho."
+    },
+    {
+      "id": "app1010",
+      "patientId": "user6",
+      "professionalId": "user7",
+      "date": "2024-03-10T14:00:00.000Z",
+      "status": "completed",
+      "type": "return",
+      "notes": "Retorno pós-tratamento."
     }
   ],
   "medical_records": [
     {
-      "id": "rec3",
+      "id": "rec1",
       "patientId": "user6",
       "professionalId": "user7",
-      "date": "2025-03-05T11:30:00.000Z",
+      "date": "2024-05-05T11:30:00.000Z",
       "type": "consultation",
       "title": "Consulta Dermatológica",
       "description": "Paciente apresenta lesões avermelhadas na região do tórax.",
@@ -148,44 +499,333 @@
       "symptoms": "Coceira intensa, vermelhidão, descamação da pele.",
       "treatment": "Prescrição de corticoide tópico, recomendação de evitar alérgenos.",
       "notes": "Paciente deve retornar em 15 dias para reavaliação."
+    },
+    {
+      "id": "rec2",
+      "patientId": "user2",
+      "professionalId": "user5",
+      "date": "2024-05-15T15:45:00.000Z",
+      "type": "consultation",
+      "title": "Consulta Ortopédica",
+      "description": "Paciente com dores lombares após esforço físico.",
+      "diagnosis": "Lombalgia aguda",
+      "symptoms": "Dor na região lombar, dificuldade para se levantar, desconforto ao caminhar.",
+      "treatment": "Anti-inflamatórios, repouso relativo, compressas mornas.",
+      "notes": "Retorno em 7 dias para reavaliação. Considerar fisioterapia."
+    },
+    {
+      "id": "rec3",
+      "patientId": "user8",
+      "professionalId": "user9",
+      "date": "2024-05-10T09:30:00.000Z",
+      "type": "consultation",
+      "title": "Consulta Cardiológica",
+      "description": "Paciente hipertensa com queixas de palpitações.",
+      "diagnosis": "Hipertensão arterial sistêmica, Taquicardia sinusal",
+      "symptoms": "Palpitações, tontura, cansaço aos esforços moderados.",
+      "treatment": "Ajuste da medicação anti-hipertensiva, solicitação de Holter 24h.",
+      "notes": "Orientada a fazer controle diário da PA. Retorno após resultado dos exames."
     }
   ],
-  "prescriptions": [],
+  "prescriptions": [
+    {
+      "id": "presc1",
+      "patientId": "user2",
+      "professionalId": "user5",
+      "date": "2024-05-15T16:00:00.000Z",
+      "medications": [
+        {
+          "name": "Nimesulida",
+          "dosage": "100mg",
+          "frequency": "12/12h",
+          "duration": "5 dias"
+        },
+        {
+          "name": "Ciclobenzaprina",
+          "dosage": "5mg",
+          "frequency": "1x ao dia",
+          "duration": "7 dias"
+        }
+      ],
+      "instructions": "Tomar com água, após as refeições. Evitar esforços físicos por 5 dias."
+    },
+    {
+      "id": "presc2",
+      "patientId": "user6",
+      "professionalId": "user7",
+      "date": "2024-05-05T12:00:00.000Z",
+      "medications": [
+        {
+          "name": "Betametasona Creme",
+          "dosage": "Aplicação tópica",
+          "frequency": "12/12h",
+          "duration": "10 dias"
+        }
+      ],
+      "instructions": "Aplicar fina camada nas áreas afetadas. Evitar exposição solar."
+    }
+  ],
   "financial_data": [
     {
+      "id": "fin1",
+      "date": "2024-05-02",
+      "type": "income",
+      "category": "consultation",
+      "amount": 250,
+      "patientId": "user2",
+      "professionalId": "user5",
+      "appointmentId": "app9",
+      "description": "Consulta Ortopédica - Carlos Ferreira"
+    },
+    {
+      "id": "fin2",
+      "date": "2024-05-04",
+      "type": "income",
+      "category": "consultation",
+      "amount": 300,
+      "patientId": "user10",
+      "professionalId": "user9",
+      "appointmentId": "app10",
+      "description": "Consulta Cardiológica - Ana Beatriz"
+    },
+    {
       "id": "fin3",
-      "date": "2025-03-12",
+      "date": "2024-05-10",
+      "type": "income",
+      "category": "consultation",
+      "amount": 280,
+      "patientId": "user8",
+      "professionalId": "user9",
+      "appointmentId": "app3",
+      "description": "Consulta Cardiológica - Mariana Silva"
+    },
+    {
+      "id": "fin4",
+      "date": "2024-05-12",
       "type": "income",
       "category": "telemedicine",
       "amount": 180,
       "patientId": "user6",
       "professionalId": "user7",
-      "appointmentId": "app5",
+      "appointmentId": "app2",
       "description": "Teleconsulta Dermatológica - João Oliveira"
     },
     {
-      "id": "fin4",
-      "date": "2025-03-15",
+      "id": "fin5",
+      "date": "2024-05-12",
+      "type": "income",
+      "category": "consultation",
+      "amount": 220,
+      "patientId": "user10",
+      "professionalId": "user11",
+      "appointmentId": "app4",
+      "description": "Consulta Pediátrica - Ana Beatriz"
+    },
+    {
+      "id": "fin6",
+      "date": "2024-05-15",
+      "type": "income",
+      "category": "consultation",
+      "amount": 250,
+      "patientId": "user2",
+      "professionalId": "user5",
+      "appointmentId": "app1",
+      "description": "Consulta Ortopédica - Carlos Ferreira"
+    },
+    {
+      "id": "fin7",
+      "date": "2024-05-16",
+      "type": "income",
+      "category": "consultation",
+      "amount": 250,
+      "patientId": "user10",
+      "professionalId": "user5",
+      "appointmentId": "app6",
+      "description": "Consulta Ortopédica - Ana Beatriz"
+    },
+    {
+      "id": "fin8",
+      "date": "2024-05-05",
+      "type": "expense",
+      "category": "supplies",
+      "amount": 850,
+      "description": "Materiais Médicos Diversos"
+    },
+    {
+      "id": "fin9",
+      "date": "2024-05-08",
+      "type": "expense",
+      "category": "utilities",
+      "amount": 750,
+      "description": "Contas de Água e Luz"
+    },
+    {
+      "id": "fin10",
+      "date": "2024-05-10",
+      "type": "expense",
+      "category": "maintenance",
+      "amount": 480,
+      "description": "Manutenção de Equipamentos"
+    },
+    {
+      "id": "fin11",
+      "date": "2024-05-15",
       "type": "expense",
       "category": "salaries",
       "amount": 5000,
       "description": "Pagamento de Salários - Enfermagem"
     },
     {
-      "id": "fin5",
-      "date": "2025-03-15",
+      "id": "fin12",
+      "date": "2024-05-15",
       "type": "expense",
       "category": "rent",
       "amount": 3500,
-      "description": "Aluguel da Clínica - Março 2025"
+      "description": "Aluguel da Clínica - Maio 2024"
     },
     {
-      "id": "fin6",
-      "date": "2025-03-20",
+      "id": "fin13",
+      "date": "2024-05-17",
       "type": "expense",
       "category": "supplies",
       "amount": 1200,
       "description": "Materiais Médicos e Medicamentos"
+    },
+    {
+      "id": "fin14",
+      "date": "2024-04-05",
+      "type": "income",
+      "category": "consultation",
+      "amount": 290,
+      "description": "Consulta Clínico Geral"
+    },
+    {
+      "id": "fin15",
+      "date": "2024-04-10",
+      "type": "income",
+      "category": "exams",
+      "amount": 350,
+      "description": "Exames Laboratoriais"
+    },
+    {
+      "id": "fin16",
+      "date": "2024-04-15",
+      "type": "income",
+      "category": "telemedicine",
+      "amount": 170,
+      "description": "Teleconsulta Clínico Geral"
+    },
+    {
+      "id": "fin17",
+      "date": "2024-04-05",
+      "type": "expense",
+      "category": "marketing",
+      "amount": 600,
+      "description": "Campanha Marketing Digital"
+    },
+    {
+      "id": "fin18",
+      "date": "2024-04-12",
+      "type": "expense",
+      "category": "taxes",
+      "amount": 1850,
+      "description": "Impostos e Taxas"
+    },
+    {
+      "id": "fin1001",
+      "date": "2024-01-05",
+      "type": "income",
+      "category": "consultation",
+      "amount": 200,
+      "description": "Consulta Janeiro"
+    },
+    {
+      "id": "fin1002",
+      "date": "2024-01-10",
+      "type": "income",
+      "category": "exams",
+      "amount": 150,
+      "description": "Exame Janeiro"
+    },
+    {
+      "id": "fin1003",
+      "date": "2024-01-15",
+      "type": "income",
+      "category": "telemedicine",
+      "amount": 180,
+      "description": "Telemedicina Janeiro"
+    },
+    {
+      "id": "fin1004",
+      "date": "2024-01-20",
+      "type": "income",
+      "category": "consultation",
+      "amount": 220,
+      "description": "Consulta Janeiro"
+    },
+    {
+      "id": "fin1005",
+      "date": "2024-01-25",
+      "type": "expense",
+      "category": "supplies",
+      "amount": 300,
+      "description": "Materiais Janeiro"
+    },
+    {
+      "id": "fin1006",
+      "date": "2024-01-28",
+      "type": "expense",
+      "category": "utilities",
+      "amount": 250,
+      "description": "Água/Luz Janeiro"
+    },
+    {
+      "id": "fin1007",
+      "date": "2024-02-05",
+      "type": "income",
+      "category": "consultation",
+      "amount": 210,
+      "description": "Consulta Fevereiro"
+    },
+    {
+      "id": "fin1008",
+      "date": "2024-02-10",
+      "type": "income",
+      "category": "exams",
+      "amount": 160,
+      "description": "Exame Fevereiro"
+    },
+    {
+      "id": "fin1009",
+      "date": "2024-02-15",
+      "type": "income",
+      "category": "telemedicine",
+      "amount": 190,
+      "description": "Telemedicina Fevereiro"
+    },
+    {
+      "id": "fin1010",
+      "date": "2024-02-20",
+      "type": "income",
+      "category": "consultation",
+      "amount": 230,
+      "description": "Consulta Fevereiro"
+    },
+    {
+      "id": "fin1011",
+      "date": "2024-02-25",
+      "type": "expense",
+      "category": "supplies",
+      "amount": 320,
+      "description": "Materiais Fevereiro"
+    },
+    {
+      "id": "fin1012",
+      "date": "2024-02-28",
+      "type": "expense",
+      "category": "utilities",
+      "amount": 260,
+      "description": "Água/Luz Fevereiro"
     }
   ],
   "consents": [
@@ -196,17 +836,68 @@
       "status": "accepted",
       "date": "2023-11-10T14:25:00.000Z",
       "details": "Consentimento para processamento de dados pessoais e de saúde conforme LGPD"
+    },
+    {
+      "id": "con2",
+      "userId": "user6",
+      "type": "data_processing",
+      "status": "accepted",
+      "date": "2023-12-15T10:25:00.000Z",
+      "details": "Consentimento para processamento de dados pessoais e de saúde conforme LGPD"
+    },
+    {
+      "id": "con3",
+      "userId": "user8",
+      "type": "data_processing",
+      "status": "accepted",
+      "date": "2024-01-05T09:50:00.000Z",
+      "details": "Consentimento para processamento de dados pessoais e de saúde conforme LGPD"
+    },
+    {
+      "id": "con4",
+      "userId": "user10",
+      "type": "data_processing",
+      "status": "accepted",
+      "date": "2024-02-15T11:30:00.000Z",
+      "details": "Consentimento para processamento de dados pessoais e de saúde conforme LGPD"
     }
   ],
   "feedback": [
     {
       "id": "feed1",
       "userId": "user2",
-      "appointmentId": "app3",
+      "appointmentId": "app1",
       "professionalId": "user5",
       "rating": 4,
       "comment": "Bom atendimento, o médico foi atencioso e explicou bem o diagnóstico.",
-      "date": "2025-03-15T16:30:00.000Z"
+      "date": "2024-05-15T16:30:00.000Z"
+    },
+    {
+      "id": "feed2",
+      "userId": "user8",
+      "appointmentId": "app3",
+      "professionalId": "user9",
+      "rating": 5,
+      "comment": "Excelente atendimento. Diagnóstico preciso e tratamento eficaz.",
+      "date": "2024-05-10T10:45:00.000Z"
+    },
+    {
+      "id": "feed3",
+      "userId": "user10",
+      "appointmentId": "app4",
+      "professionalId": "user11",
+      "rating": 5,
+      "comment": "Ótimo atendimento pediátrico. Profissional muito paciente com crianças.",
+      "date": "2024-05-12T15:30:00.000Z"
+    },
+    {
+      "id": "feed4",
+      "userId": "user2",
+      "appointmentId": "app9",
+      "professionalId": "user5",
+      "rating": 4,
+      "comment": "Teleconsulta eficiente. Médico pontual e atencioso.",
+      "date": "2024-05-03T12:15:00.000Z"
     }
   ],
   "notifications": [
@@ -214,10 +905,37 @@
       "id": "not1",
       "userId": "user2",
       "title": "Lembrete de Consulta",
-      "message": "Sua consulta com a Dra. Ana Oliveira está agendada para amanhã às 14:30.",
+      "message": "Sua consulta com o Dr. Ricardo Santos está agendada para amanhã às 14:30.",
       "type": "appointment_reminder",
-      "date": "2025-04-19T14:30:00.000Z",
+      "date": "2024-05-19T14:30:00.000Z",
       "read": false
+    },
+    {
+      "id": "not2",
+      "userId": "user6",
+      "title": "Resultado de Exames",
+      "message": "Seus resultados de exames já estão disponíveis no sistema.",
+      "type": "exam_result",
+      "date": "2024-05-18T10:00:00.000Z",
+      "read": true
+    },
+    {
+      "id": "not3",
+      "userId": "user8",
+      "title": "Confirmação de Agendamento",
+      "message": "Sua consulta com a Dra. Carla Mendes foi confirmada para 20/05/2024 às 09:00.",
+      "type": "appointment_confirmation",
+      "date": "2024-05-17T15:20:00.000Z",
+      "read": false
+    },
+    {
+      "id": "not4",
+      "userId": "user10",
+      "title": "Lembrete de Medicação",
+      "message": "Não se esqueça de tomar sua medicação conforme prescrito pelo Dr. Fernando Alves.",
+      "type": "medication_reminder",
+      "date": "2024-05-18T08:00:00.000Z",
+      "read": true
     }
   ]
 }
