@@ -1,46 +1,46 @@
-import { useState, useEffect } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Article, Close, Error, MedicalServices, PersonAdd, Visibility, VisibilityOff, Warning } from '@mui/icons-material';
 import {
-    Box,
-    Container,
-    Typography,
-    TextField,
-    Button,
-    Paper,
-    Avatar,
-    FormControl,
-    InputLabel,
-    OutlinedInput,
-    InputAdornment,
-    IconButton,
     Alert,
-    Fade,
+    Avatar,
+    Box,
+    Button,
     CircularProgress,
-    Link,
-    useMediaQuery,
-    useTheme,
-    Divider,
+    Container,
     Dialog,
-    DialogTitle,
-    DialogContent,
     DialogActions,
-    Stepper,
-    Step,
-    StepLabel,
-    Select,
-    MenuItem,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    Fade,
+    FormControl,
     FormHelperText,
+    IconButton,
+    InputAdornment,
+    InputLabel,
+    Link,
     List,
     ListItem,
     ListItemIcon,
-    ListItemText
+    ListItemText,
+    MenuItem,
+    OutlinedInput,
+    Paper,
+    Select,
+    Step,
+    StepLabel,
+    Stepper,
+    TextField,
+    Typography,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
-import { Visibility, VisibilityOff, MedicalServices, PersonAdd, Close, Error, Warning } from '@mui/icons-material';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { useLocation } from 'react-router-dom';
 import { z } from 'zod';
-import { useAuth } from '../../hooks/useAuth';
 import ConsentModal from '../../components/privacy/ConsentModal';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
 // Schema de validação com Zod
 const loginSchema = z.object({
@@ -97,7 +97,6 @@ interface LocationState {
 
 const Login = () => {
     const { login, loading } = useAuth();
-    const navigate = useNavigate();
     const location = useLocation();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -115,6 +114,7 @@ const Login = () => {
     const [activeStep, setActiveStep] = useState(0);
     const [missingFields, setMissingFields] = useState<string[]>([]);
     const [showValidationDialog, setShowValidationDialog] = useState(false);
+    const [openPrivacyDialog, setOpenPrivacyDialog] = useState(false);
 
     // Efeito para animação de entrada
     useEffect(() => {
@@ -233,7 +233,11 @@ const Login = () => {
     };
 
     const handlePrivacyPolicyClick = () => {
-        navigate('/privacy-policy');
+        setOpenPrivacyDialog(true);
+    };
+
+    const handleClosePrivacyDialog = () => {
+        setOpenPrivacyDialog(false);
     };
 
     const handleRegisterClick = () => {
@@ -880,6 +884,7 @@ const Login = () => {
                                     component="button"
                                     variant="body2"
                                     onClick={handlePrivacyPolicyClick}
+                                    type="button"
                                     sx={{
                                         textDecoration: 'none',
                                         fontSize: { xs: '0.8rem', sm: '0.875rem' },
@@ -1093,6 +1098,195 @@ const Login = () => {
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button
                         onClick={() => setShowValidationDialog(false)}
+                        variant="contained"
+                        color="primary"
+                        sx={{ borderRadius: 2, px: 3 }}
+                    >
+                        Entendi
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog de Política de Privacidade */}
+            <Dialog
+                open={openPrivacyDialog}
+                onClose={handleClosePrivacyDialog}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: { borderRadius: 2, maxWidth: '800px' }
+                }}
+            >
+                <DialogTitle sx={{
+                    bgcolor: 'primary.main',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 3,
+                    py: 2
+                }}>
+                    <Article />
+                    <Typography variant="h6">Política de Privacidade</Typography>
+                    <IconButton
+                        edge="end"
+                        color="inherit"
+                        onClick={handleClosePrivacyDialog}
+                        aria-label="close"
+                        sx={{ ml: 'auto' }}
+                    >
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent dividers sx={{ px: 3, py: 2 }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                        Política de Privacidade do Sistema VidaPlus
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        Última atualização: 15 de Agosto de 2024
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        Esta Política de Privacidade descreve como o Sistema de Gestão Hospitalar VidaPlus ("nós", "nosso" ou "VidaPlus")
+                        coleta, usa e compartilha seus dados pessoais quando você utiliza nossa plataforma.
+                    </Typography>
+
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mt: 2 }}>
+                        1. INFORMAÇÕES QUE COLETAMOS
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        <strong>Dados de cadastro:</strong> Nome completo, e-mail, telefone, endereço, data de nascimento, gênero, tipo sanguíneo e outros dados demográficos.
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        <strong>Dados de saúde:</strong> Histórico médico, diagnósticos, resultados de exames, medicamentos, alergias e outras informações de saúde relevantes para seu atendimento.
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        <strong>Dados de uso:</strong> Informações sobre como você utiliza nossa plataforma, incluindo registros de acesso, páginas visitadas e funcionalidades utilizadas.
+                    </Typography>
+
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mt: 2 }}>
+                        2. COMO USAMOS SUAS INFORMAÇÕES
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        Utilizamos suas informações para:
+                    </Typography>
+
+                    <List dense>
+                        <ListItem>
+                            <ListItemText primary="Fornecer e melhorar nossos serviços de saúde" />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemText primary="Agendar consultas e procedimentos médicos" />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemText primary="Manter seu histórico médico para referência e continuidade do cuidado" />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemText primary="Comunicar-se com você sobre seu atendimento" />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemText primary="Cumprir obrigações legais e regulatórias" />
+                        </ListItem>
+                    </List>
+
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mt: 2 }}>
+                        3. COMPARTILHAMENTO DE INFORMAÇÕES
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        Podemos compartilhar suas informações com:
+                    </Typography>
+
+                    <List dense>
+                        <ListItem>
+                            <ListItemText
+                                primary="Profissionais de saúde envolvidos em seu atendimento"
+                                secondary="Médicos, enfermeiros e outros profissionais que precisam acessar suas informações para prestar cuidados"
+                            />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemText
+                                primary="Serviços de terceiros"
+                                secondary="Laboratórios, farmácias e outros serviços necessários para seu tratamento"
+                            />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemText
+                                primary="Autoridades competentes"
+                                secondary="Quando exigido por lei, ordem judicial ou regulamentação aplicável"
+                            />
+                        </ListItem>
+                    </List>
+
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mt: 2 }}>
+                        4. SEGURANÇA DA INFORMAÇÃO
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        Implementamos medidas técnicas e organizacionais apropriadas para proteger suas informações contra acesso não autorizado,
+                        perda, alteração ou divulgação. Todos os dados são criptografados e armazenados com segurança.
+                    </Typography>
+
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mt: 2 }}>
+                        5. SEUS DIREITOS
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        Você tem o direito de:
+                    </Typography>
+
+                    <List dense>
+                        <ListItem>
+                            <ListItemText primary="Acessar suas informações pessoais" />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemText primary="Corrigir informações imprecisas" />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemText primary="Solicitar a exclusão de suas informações (sujeito a retenção legal)" />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemText primary="Obter uma cópia de seus dados em formato portátil" />
+                        </ListItem>
+                        <ListItem>
+                            <ListItemText primary="Opor-se ao processamento de seus dados em determinadas circunstâncias" />
+                        </ListItem>
+                    </List>
+
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mt: 2 }}>
+                        6. RETENÇÃO DE DADOS
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        Retemos suas informações pelo tempo necessário para cumprir as finalidades para as quais foram coletadas,
+                        incluindo obrigações legais, contábeis ou de relatórios.
+                    </Typography>
+
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mt: 2 }}>
+                        7. ALTERAÇÕES A ESTA POLÍTICA
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        Podemos atualizar esta Política de Privacidade periodicamente. A versão mais recente estará sempre disponível em nossa plataforma.
+                    </Typography>
+
+                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mt: 2 }}>
+                        8. CONTATO
+                    </Typography>
+
+                    <Typography variant="body1" paragraph>
+                        Se você tiver dúvidas sobre esta Política de Privacidade ou sobre como tratamos seus dados pessoais,
+                        entre em contato conosco pelo e-mail: privacidade@vidaplus.com.br
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button
+                        onClick={handleClosePrivacyDialog}
                         variant="contained"
                         color="primary"
                         sx={{ borderRadius: 2, px: 3 }}
