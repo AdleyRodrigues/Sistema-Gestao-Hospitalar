@@ -16,6 +16,12 @@ O Sistema de Gestão Hospitalar VidaPlus é uma solução abrangente projetada p
 - **Interface adaptativa** para diferentes dispositivos
 - **Segurança e controle de acesso** baseado em perfis
 
+## 📝 Instruções para Avaliação
+
+Para facilitar a avaliação do sistema, preparamos um roteiro detalhado com instruções de configuração, credenciais de acesso e passos para testar todas as funcionalidades implementadas.
+
+👉 **[Acessar Instruções para Avaliação](./docs/INSTRUCOES.md)**
+
 ### 🔗 Documentação Detalhada
 
 - [Documentação do Frontend](./frontend/README.md) - Detalhes sobre a implementação React/TypeScript
@@ -169,5 +175,6 @@ Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](./LI
   
   <a href="./api/README.md">Documentação da API</a> •
   <a href="./frontend/README.md">Documentação do Frontend</a> •
-  <a href="./docs/">Documentação Técnica</a>
+  <a href="./docs/">Documentação Técnica</a> •
+  <a href="./docs/INSTRUCOES.md">Instruções para Avaliação</a>
 </div>
