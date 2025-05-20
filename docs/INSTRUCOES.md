@@ -9,7 +9,6 @@ Este documento contém instruções detalhadas para configurar, executar e avali
 - Node.js versão 16 ou superior
 - PNPM (recomendado) ou NPM
 - Navegador moderno (Chrome, Firefox, Edge)
-- Resolução mínima de tela: 1280x720
 
 ## Instalação e Execução do Sistema
 
@@ -311,7 +310,7 @@ Se encontrar algum problema durante a avaliação:
 - Verifique se o JSON Server está rodando corretamente (porta 3001)
 - Certifique-se de que todas as dependências foram instaladas
 - Limpe o cache do navegador ou use uma janela anônima
-- Em caso de dúvidas: <suporte@sghss.com>
+- Em caso de dúvidas: <adleyrc.job@gmail.com>
 
 ---
 

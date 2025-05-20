@@ -1,94 +1,191 @@
-# API do Sistema de Gestão Hospitalar (SGHSS)
+# API do Sistema de Gestão Hospitalar VidaPlus
 
-Backend simulado usando JSON Server para o Sistema de Gestão Hospitalar.
+<div align="center">
 
-## 📋 Descrição
+  <h3>Backend simulado para o sistema de gestão hospitalar</h3>
+</div>
 
-Esta API simula um backend completo para o Sistema de Gestão Hospitalar usando JSON Server, um pacote que permite criar rapidamente uma API REST falsa a partir de um arquivo JSON.
+## 📋 Visão Geral
 
-## 🗂️ Estrutura de Arquivos
+A API do VidaPlus fornece uma interface para as operações do sistema de gestão hospitalar. Implementada usando JSON Server, ela simula um backend para desenvolvimento e testes, permitindo que o frontend funcione mesmo sem um servidor real.
+
+Este módulo é uma implementação simulada com JSON Server para desenvolvimento e testes, projetada para ser substituível por uma implementação de backend completa em produção.
+
+## 🚀 Principais Características
+
+- 🔒 **Autenticação Simulada**: Sistema baseado em tokens com múltiplos perfis de acesso
+- 🔄 **API RESTful**: Endpoints básicos seguindo padrões REST
+- 📄 **Documentação**: Endpoints documentados para fácil utilização
+- ⚡ **Ambiente de Simulação**: Perfeito para desenvolvimento e testes sem dependências externas
+
+## 🏗️ Estrutura da API Simulada
 
 ```
 api/
-├── db.json              # Banco de dados em formato JSON
-├── json-server.json     # Configurações do JSON Server
-├── middlewares.js       # Middlewares personalizados
-├── routes.json          # Configuração de rotas personalizadas
-└── server.js            # Servidor personalizado com autenticação
+├── db.json                # Banco de dados em formato JSON
+├── server.js              # Configuração principal do servidor
+├── middlewares.js         # Middlewares básicos
+└── routes/                # Rotas básicas implementadas
 ```
 
-## 📊 Modelos de Dados
+## 📑 Modelos de Dados
 
-O arquivo `db.json` contém os seguintes modelos:
+A API simulada gerencia os seguintes recursos principais:
 
-- **users**: Usuários do sistema (pacientes, profissionais, administradores)
-- **appointments**: Consultas e agendamentos
-- **medical_records**: Prontuários médicos
+### Usuários (Users)
 
-## 🔑 Autenticação
+```json
+{
+  "id": "string",
+  "name": "Nome Completo",
+  "email": "email@exemplo.com",
+  "password": "senha-hash",
+  "role": "admin|professional|patient",
+  "status": "active|inactive",
+  "createdAt": "date-string"
+}
+```
 
-A API inclui uma rota de autenticação simulada:
+### Pacientes (Patients)
 
-- **POST /api/login**: Autentica um usuário com email e senha, retornando um token e os dados do usuário
+```json
+{
+  "id": "string-referência-users",
+  "userId": "string-referência-users",
+  "birthDate": "date-string",
+  "gender": "string",
+  "bloodType": "string",
+  "address": {
+    "street": "Rua",
+    "number": "Número",
+    "neighborhood": "Bairro",
+    "city": "Cidade",
+    "state": "Estado",
+    "zipCode": "CEP"
+  }
+}
+```
 
-## 🛣️ Rotas Disponíveis
+### Profissionais (Professionals)
 
-### Usuários
+```json
+{
+  "id": "string-referência-users",
+  "userId": "string-referência-users",
+  "specialty": "Especialidade",
+  "crm": "Número de registro"
+}
+```
 
-- `GET /users`: Lista todos os usuários
-- `GET /users/:id`: Busca usuário por ID
-- `POST /users`: Cria novo usuário
-- `PUT /users/:id`: Atualiza usuário
-- `DELETE /users/:id`: Remove usuário
+## 🔗 Endpoints Básicos da API
 
-### Consultas
+### 🔐 Autenticação
 
-- `GET /appointments`: Lista todas as consultas
-- `GET /appointments/:id`: Busca consulta por ID
-- `POST /appointments`: Cria nova consulta
-- `PUT /appointments/:id`: Atualiza consulta
-- `DELETE /appointments/:id`: Cancela/remove consulta
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/login` | Simular autenticação de usuário |
 
-### Prontuários
+**Exemplo de login:**
 
-- `GET /medical_records`: Lista todos os prontuários
-- `GET /medical_records/:id`: Busca prontuário por ID
-- `POST /medical_records`: Cria novo prontuário
-- `PUT /medical_records/:id`: Atualiza prontuário
-- `DELETE /medical_records/:id`: Remove prontuário
+```bash
+curl -X POST http://localhost:3001/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com", "password":"password"}'
+```
 
-## 🛠️ Como Executar
+### 👤 Usuários
 
-1. **Instale as dependências**
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/users` | Listar todos os usuários |
+| GET | `/users/:id` | Obter usuário por ID |
+| POST | `/users` | Criar novo usuário |
+| PUT | `/users/:id` | Atualizar usuário |
+| DELETE | `/users/:id` | Remover usuário |
+
+### 👥 Pacientes e Profissionais
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/patients` | Listar todos os pacientes |
+| GET | `/patients/:id` | Obter paciente por ID |
+| GET | `/professionals` | Listar todos os profissionais |
+| GET | `/professionals/:id` | Obter profissional por ID |
+
+## 🔐 Simulação de Autenticação
+
+A API simula autenticação com as seguintes características:
+
+- Detecção de perfil baseada no email do usuário:
+  - Emails contendo "admin" = perfil administrador
+  - Emails contendo "doctor" ou "professional" = perfil profissional
+  - Demais emails = perfil paciente
+
+- Para fins de teste e desenvolvimento, qualquer senha é aceita
+
+## 🛠️ Configuração e Execução
+
+### Pré-requisitos
+
+- Node.js 16.x ou superior
+- npm ou pnpm
+
+### Instalação
+
+1. **Clone o repositório e navegue até o diretório da API**:
+
+   ```bash
+   git clone https://github.com/seu-usuario/Sistema-Gestao-Hospitalar.git
+   cd Sistema-Gestao-Hospitalar/api
+   ```
+
+2. **Instale as dependências**:
 
    ```bash
    npm install
    ```
 
-2. **Inicie o servidor**
+3. **Inicie o servidor de desenvolvimento**:
 
    ```bash
    npm start
    ```
 
-   O servidor estará disponível em <http://localhost:3001>
+O servidor estará disponível em `http://localhost:3001`.
 
-## 🔧 Configurações Adicionais
+## 🧪 Testando a API
 
-- **CORS**: Configurado para permitir solicitações de qualquer origem
-- **Timestamp**: Adiciona automaticamente timestamps nas operações POST/PUT/PATCH
+Recomendamos testar a API usando ferramentas como Postman, Insomnia ou curl.
 
-## 🧪 Teste da API
+### Exemplos de Requisições
 
-Use ferramentas como Postman, Insomnia ou curl para testar as rotas:
+#### Autenticação (Login)
 
 ```bash
-# Exemplo de login
-curl -X POST http://localhost:3001/api/login \
+curl -X POST http://localhost:3001/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"maria@vidaplus.com", "password":"123456"}'
+  -d '{
+    "email": "admin@example.com",
+    "password": "qualquer-senha"
+  }'
 ```
 
-## 📝 Nota
+#### Listar Usuários
 
-Esta API é apenas uma simulação para desenvolvimento e testes. Em um ambiente de produção, recomenda-se implementar uma API real com autenticação segura, criptografia e banco de dados adequado.
+```bash
+curl -X GET http://localhost:3001/users
+```
+
+## 📄 Licença
+
+Este projeto está licenciado sob a licença MIT - consulte o arquivo [LICENSE](../LICENSE) para obter detalhes.
+
+---
+
+<div align="center">
+  <p>Parte do <a href="../README.md">Sistema de Gestão Hospitalar VidaPlus</a></p>
+  <p>
+    <a href="../frontend/README.md">Documentação do Frontend</a> •
+    <a href="../docs/">Documentação Técnica</a>
+  </p>
+</div>

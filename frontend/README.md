@@ -1,158 +1,179 @@
-# Sistema de Gestão Hospitalar e de Serviços de Saúde (SGHSS)
+# Frontend do Sistema de Gestão Hospitalar VidaPlus
 
-![SGHSS Logo](./public/favicon.ico)
+<div align="center">
+  <img src="./public/favicon.ico" alt="VidaPlus Logo" width="80" />
+  <h3>Interface moderna e responsiva para gestão hospitalar</h3>
+</div>
 
-## Descrição
+## 📋 Visão Geral
 
-O Sistema de Gestão Hospitalar e de Serviços de Saúde (SGHSS) é uma aplicação web desenvolvida para otimizar a gestão de hospitais e clínicas, facilitando o gerenciamento de pacientes, profissionais de saúde, consultas e prontuários médicos.
+O frontend do VidaPlus é construído com React e TypeScript, seguindo as melhores práticas de desenvolvimento moderno para criar uma interface robusta, segura e com excelente experiência do usuário. A aplicação é projetada para ser responsiva, acessível e modular, facilitando a manutenção e extensão do código.
 
-## Tecnologias Utilizadas
+## 🚀 Principais Tecnologias
 
-- **Frontend**: React + TypeScript, Vite, Material UI
-- **Gerenciamento de Estado**: Redux Toolkit
-- **Roteamento**: React Router
-- **Backend Simulado**: JSON Server
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="40"/><br/>React 18</td>
+      <td align="center"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="40"/><br/>TypeScript</td>
+      <td align="center"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/materialui/materialui-original.svg" width="40"/><br/>Material UI</td>
+    </tr>
+  </table>
+</div>
 
-## Estrutura do Projeto
+- 🧭 **Roteamento**: React Router v6 com rotas protegidas por perfil
+- 📝 **Formulários**: React Hook Form com validação Zod
+- 🎨 **Componentes de UI**: Material UI v5 com tema personalizado
 
-A aplicação está estruturada com uma arquitetura modular, facilitando a manutenção e escalabilidade:
+## 🏗️ Arquitetura Implementada
+
+A aplicação segue uma arquitetura em camadas com separação clara de responsabilidades:
 
 ```
 src/
-├── api/            # Serviços de API e configurações do Axios
-├── components/     # Componentes reutilizáveis
-│   ├── layout/     # Componentes de layout (Header, Sidebar, etc)
-│   └── ui/         # Componentes de UI compartilhados
-├── hooks/          # Hooks personalizados (useAuth, useTypedDispatch, etc)
-├── pages/          # Páginas da aplicação
-│   ├── auth/       # Páginas de autenticação
-│   ├── dashboard/  # Dashboards por perfil de usuário
-│   ├── patient/    # Páginas para pacientes
-│   ├── professional/ # Páginas para profissionais
-│   └── admin/      # Páginas para administradores
-├── routes/         # Configuração de rotas
-├── store/          # Configuração do Redux e slices
-│   ├── slices/     # Slices do Redux Toolkit
-│   └── index.ts    # Configuração da store
-├── styles/         # Estilos globais e temas
-├── types/          # Tipagens TypeScript
-├── utils/          # Funções utilitárias
-├── App.tsx         # Componente principal
-└── main.tsx        # Entrada da aplicação
+├── components/               # Componentes reutilizáveis
+│   ├── layout/               # Layout principal da aplicação
+│   │   ├── MainLayout.tsx    # Componente de layout com Sidebar/Header
+│   │   ├── Sidebar.tsx       # Barra lateral navegacional
+│   │   └── Header.tsx        # Cabeçalho com perfil e configurações
+│   │
+│   ├── common/               # Componentes genéricos compartilhados
+│   ├── forms/                # Componentes de formulário (campos, validações)
+│   ├── modals/               # Diálogos e modais reutilizáveis
+│   ├── privacy/              # Componentes relacionados à privacidade
+│   └── ...
+│
+├── pages/                    # Páginas da aplicação
+│   ├── auth/                 # Páginas de autenticação
+│   │   ├── Login.tsx         # Tela de login
+│   │   └── Register.tsx      # Tela de cadastro 
+│   │
+│   ├── dashboard/            # Dashboards por perfil
+│   │   ├── admin/            # Dashboard de administrador
+│   │   ├── patient/          # Dashboard de paciente
+│   │   └── professional/     # Dashboard de profissional
+│   │
+│   ├── patient/              # Páginas do paciente
+│   ├── professional/         # Páginas do profissional
+│   ├── admin/                # Páginas do administrador
+│   └── privacy/              # Páginas de privacidade e LGPD
+│
+├── hooks/                    # Hooks personalizados
+│   ├── useAuth.tsx           # Hook de autenticação
+│   └── useApi.tsx            # Hook para chamadas de API
+│
+├── services/                 # Serviços e APIs
+│   ├── api.ts                # Cliente Axios configurado
+│   └── authService.ts        # Serviço de autenticação
+│
+├── routes/                   # Configurações de rota
+│   └── index.tsx             # Definição de rotas protegidas
+│
+├── styles/                   # Estilos e temas
+│   ├── theme.ts              # Configuração do tema Material UI
+│   └── global.css            # Estilos globais
+│
+├── App.tsx                   # Componente raiz
+└── main.tsx                  # Ponto de entrada
 ```
 
-## Funcionalidades Implementadas
+## 🔀 Fluxos Implementados
 
-### Autenticação e Autorização
+### Fluxo de Autenticação
 
-- Login com diferentes perfis de usuário (paciente, profissional, admin)
-- Rotas protegidas baseadas no perfil do usuário
-- Gerenciamento de sessão
+1. O usuário acessa a tela de login (`/login`)
+2. Após autenticação bem-sucedida, o token é armazenado
+3. O usuário é redirecionado para o dashboard específico do seu perfil
+4. Rotas protegidas verificam a autenticação e o perfil do usuário antes de renderizar
 
-### Dashboard Personalizado
+### Fluxo de Gerenciamento de Usuários (Administrador)
 
-- Dashboard para pacientes
-- Dashboard para profissionais
-- Dashboard para administradores
+1. Administrador acessa a página de gerenciamento de usuários
+2. Visualiza lista de usuários com opções de filtro
+3. Pode adicionar novo usuário, editar existente ou alterar status
+4. Formulários validados garantem integridade dos dados
 
-### Pacientes
+## 🧩 Padrões de Projeto Aplicados
 
-- Visualização de consultas
-- Histórico médico
-- Telemedicina
+- **Custom Hooks**: Encapsulamento de lógica reutilizável (useAuth, useApi)
+- **Route Guards**: Proteção de rotas baseada em perfil de usuário
+- **Lazy Loading**: Carregamento sob demanda para otimizar performance
 
-### Profissionais de Saúde
+## 🎨 Sistema de Design
 
-- Gerenciamento de agenda
-- Lista de pacientes
-- Prontuários médicos
-- Telemedicina
+A aplicação usa Material UI como framework de UI, com um tema personalizado:
 
-### Layout e UI
+- Componentes reutilizáveis e consistentes
+- Sistema de grid responsivo para diferentes tamanhos de tela
+- Padronização de espaçamentos e tipografia
 
-- Interface responsiva
-- Tema personalizável
-- Componentes de layout compartilhados
+## ⚙️ Instruções para Desenvolvedores
 
-## Executando o Projeto
+### Configuração Inicial
 
-### Pré-requisitos
+1. **Instalação de Dependências**
 
-- Node.js 16+
-- pnpm ou npm
+   ```bash
+   # Usando npm
+   npm install
+   
+   # Usando pnpm (para melhor performance)
+   pnpm install
+   ```
 
-### Instalação
+2. **Variáveis de Ambiente**
 
-1. Clone o repositório:
+   Crie um arquivo `.env.local` baseado no `.env.example`:
 
-```bash
-git clone https://github.com/seu-usuario/sistema-gestao-hospitalar.git
-cd sistema-gestao-hospitalar/frontend
-```
+   ```
+   VITE_API_URL=http://localhost:3001
+   VITE_APP_ENV=development
+   ```
 
-2. Instale as dependências:
+### Scripts Disponíveis
 
-```bash
-pnpm install
-# OU
-npm install
-```
+- **Desenvolvimento**: Inicia o servidor de desenvolvimento
 
-3. Inicie o servidor de desenvolvimento:
+  ```bash
+  npm run dev
+  ```
 
-```bash
-pnpm dev
-# OU
-npm run dev
-```
+- **Build**: Gera a versão de produção
 
-4. Em outro terminal, inicie o JSON Server para simular o backend:
+  ```bash
+  npm run build
+  ```
 
-```bash
-pnpm server
-# OU
-npm run server
-```
+- **Lint**: Executa o linting do código
 
-5. Acesse a aplicação em <http://localhost:5173>
+  ```bash
+  npm run lint
+  ```
 
-## Usuários para Teste
+## 📱 Responsividade
 
-A aplicação possui usuários predefinidos para testes:
+A aplicação foi projetada para funcionar em múltiplos dispositivos:
 
-- **Paciente**
-  - Email: `paciente@exemplo.com`
-  - Senha: `senha123`
+- Desktop (1280px+): Layout completo com sidebar
+- Tablet (768px-1279px): Layout adaptado com elementos reorganizados
+- Mobile (até 767px): Layout otimizado para telas pequenas
 
-- **Profissional**
-  - Email: `profissional@exemplo.com`
-  - Senha: `senha123`
+## 🔒 Segurança no Frontend
 
-- **Administrador**
-  - Email: `admin@exemplo.com`
-  - Senha: `senha123`
+- **Controle de Acesso**: Rotas protegidas baseadas em perfil
+- **Validação de Dados**: Entradas de usuário são validadas com React Hook Form e Zod
+- **Consentimento LGPD**: Modal de política de privacidade e termos de uso
 
-## Próximos Passos
+## 📄 Licença
 
-Funcionalidades que podem ser implementadas no futuro:
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](../LICENSE) para detalhes.
 
-1. **Testes Automatizados**
-   - Configuração do Jest para testes unitários
-   - Testes de integração
+---
 
-2. **Implementação de Backend Real**
-   - Substituição do JSON Server por uma API real
-   - Integração com banco de dados
-
-3. **Recursos Adicionais**
-   - Sistema de notificações
-   - Relatórios e estatísticas
-   - Integrações com outros sistemas
-
-## Contribuição
-
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou enviar pull requests com melhorias.
-
-## Licença
-
-Este projeto está licenciado sob a licença MIT - veja o arquivo LICENSE para mais detalhes.
+<div align="center">
+  <p>Parte do <a href="../README.md">Sistema de Gestão Hospitalar VidaPlus</a></p>
+  <p>
+    <a href="../api/README.md">Documentação da API</a> •
+    <a href="../docs/">Documentação Técnica</a>
+  </p>
+</div>
